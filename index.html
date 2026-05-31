@@ -1,0 +1,2511 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>מערכת תקציב פעילויות שנתית לנוער</title>
+    <!-- פונט רוביק אלגנטי -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet font-display-swap">
+    <!-- שימוש ב-Tailwind CSS דרך CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              indigo: {
+                50: '#f5f3ff',
+                100: '#ede9fe',
+                200: '#ddd6fe',
+                300: '#c4b5fd',
+                400: '#a78bfa',
+                500: '#8b5cf6',
+                600: '#4f46e5',
+                700: '#4338ca',
+                800: '#3730a3',
+                850: '#312e81',
+                900: '#1e1b4b',
+              },
+              emerald: {
+                50: '#ecfdf5',
+                100: '#d1fae5',
+                200: '#a7f3d0',
+                300: '#6ee7b7',
+                400: '#34d399',
+                500: '#10b981',
+                600: '#059669',
+                700: '#047857',
+                750: '#065f46',
+                800: '#064e3b',
+              }
+            },
+            fontFamily: {
+              sans: ['Rubik', 'Inter', 'system-ui', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <!-- לקוח Supabase דרך CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- אייקונים מבית Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      /* התאמות קטנות לחוויה חלקה */
+      body {
+        font-family: 'Rubik', sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-900 pb-12 antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+    <div class="min-h-screen flex flex-col">
+      
+      <!-- הודעות מערכת וסטטוס שרת -->
+      <div id="db-notification-container" class="hidden mx-auto max-w-4xl w-full px-4 pt-4">
+        <div class="flex items-center justify-between rounded-2xl bg-indigo-50/55 text-indigo-950 px-4 py-3 text-sm shadow-sm border border-indigo-100">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="info" class="h-4.5 w-4.5 text-indigo-600 shrink-0"></i>
+            <p id="db-notification-message" class="font-semibold"></p>
+          </div>
+          <button 
+            onclick="hideNotification()" 
+            class="rounded-lg p-1 hover:bg-indigo-100/50 text-indigo-900 transition"
+          >
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+        </div>
+      </div>
+
+
+
+      <!-- ==========================================
+          אזור התוכן המרכזי (Centralized Minimal Layout)
+         ========================================== -->
+      <main class="flex-grow mx-auto max-w-4xl w-full px-4 py-6 md:py-8">
+
+        <!-- Database status and settings panels (Collapsible Settings Panel Inside) -->
+        <div id="panel-settings" class="hidden mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm text-right">
+          <div class="flex items-center justify-between border-b pb-2 mb-3 border-slate-100">
+            <h4 class="text-xs font-bold text-slate-850 flex items-center gap-1.5">
+              <i data-lucide="key" class="h-3.5 w-3.5 text-indigo-600"></i>
+              <span>הגדרות חיבור למסד נתונים בענן (Supabase)</span>
+            </h4>
+            <button onclick="toggleSettingsPanel(false)" class="text-slate-400 hover:text-slate-600">
+              <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-505 mb-1">Supabase API URL</label>
+              <input 
+                type="text" 
+                id="input-supabase-url" 
+                placeholder="https://your-project.supabase.co" 
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-705 focus:outline-none focus:border-indigo-505"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-505 mb-1">Supabase Public Anon Key</label>
+              <input 
+                type="password" 
+                id="input-supabase-key" 
+                placeholder="ey..." 
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-705 focus:outline-none focus:border-indigo-505"
+              />
+            </div>
+          </div>
+          <div class="mt-4 flex gap-2 justify-end">
+            <button onclick="testSupabaseConnectionAndSave()" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white px-4 py-2 shadow-sm transition">
+              בדוק חיבור ושמור
+            </button>
+            <button onclick="disconnectSupabase()" class="rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-705 px-4 py-2 transition">
+              נתק חיבור
+            </button>
+          </div>
+        </div>
+
+        <!-- Section header for activities -->
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-bold text-slate-850 flex items-center gap-1.5 select-none font-sans">
+            <i data-lucide="sparkles" class="h-4 w-4 text-indigo-600"></i>
+            <span>פעילויות</span>
+            <span id="activities-count-badge" class="text-[10px] text-slate-400 bg-slate-100 rounded-md px-1.5 py-0.5 font-bold">סה"כ: 0</span>
+          </h2>
+          
+          <button 
+            onclick="openAddActivityModal()"
+            class="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-xs"
+          >
+            <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+            <span>הוסף פעילות</span>
+          </button>
+        </div>
+
+        <!-- Centralized list container of collapsible cards -->
+        <div id="activities-list-container" class="flex flex-col gap-4">
+          <!-- Rendered dynamically via javascript -->
+        </div>
+
+
+        <!-- ==========================================
+            ריכוז תקציב שנתי ומקורות מימון (כרטיסייה אחת מתומצתת)
+           ========================================== -->
+        <div class="mt-8 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
+            <i data-lucide="trending-up" class="h-5 w-5 text-indigo-600 shrink-0"></i>
+            <h3 class="text-sm font-bold text-slate-800">סיכום תקציב שנתי ומקורות מימון</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
+            <!-- קטגוריה 1: סה"כ עלות פעילויות -->
+            <div class="bg-indigo-50/5 hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 transition-all">
+              <span class="block text-xs font-bold text-slate-500 mb-2.5">סה"כ עלות פעילויות</span>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span class="text-slate-450 text-[11px]">בפועל:</span>
+                  <span id="stats-cost-act" class="font-extrabold text-slate-800 text-sm">₪0</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-indigo-950 font-semibold text-[11px]">כולל פרויקטים מתוכננים:</span>
+                  <span id="stats-cost-combined" class="font-black text-indigo-600 text-sm">₪0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- קטגוריה 2: סה"כ מתקציב הוועדה -->
+            <div class="bg-indigo-50/5 hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 transition-all">
+              <span class="block text-xs font-bold text-slate-500 mb-2.5">סה"כ מתקציב הוועדה</span>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span class="text-slate-450 text-[11px]">בפועל שולם:</span>
+                  <span id="stats-committee-act" class="font-extrabold text-emerald-700 text-sm">₪0</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-700 font-semibold text-[11px]">כולל פעילויות מתוכננות:</span>
+                  <span id="stats-committee-combined" class="font-black text-indigo-600 text-sm">₪0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- קטגוריה 3: סה"כ מימון משתתפים -->
+            <div class="bg-indigo-50/5 hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 transition-all">
+              <span class="block text-xs font-bold text-slate-500 mb-2.5">סה"כ מימון משתתפים (הורים)</span>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span class="text-slate-450 text-[11px]">בפועל נגבה:</span>
+                  <span id="stats-parents-act" class="font-extrabold text-slate-800 text-sm">₪0</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-700 font-semibold text-[11px]">כולל פעילויות מתוכננות:</span>
+                  <span id="stats-parents-combined" class="font-black text-indigo-600 text-sm">₪0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- ==========================================
+          מודאל וממשק צילום מצלמה חי (Live Camera Frame UI)
+         ========================================== -->
+      <div 
+        id="camera-modal-backdrop"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+      >
+        <div 
+          class="relative w-full max-w-md overflow-hidden rounded-3xl bg-slate-900 text-white shadow-2xl"
+        >
+          <div class="flex items-center justify-between border-b border-white/10 px-5 py-4">
+            <div class="flex items-center gap-1.5 font-bold">
+              <i data-lucide="camera" class="h-5 w-5 text-indigo-400"></i>
+              <span class="text-sm font-bold">מצלמת קבלות ייעודית (דחיסה חכמה)</span>
+            </div>
+            <button 
+              onclick="stopCamera()" 
+              class="rounded-full bg-slate-800 p-1.5 text-slate-400 hover:text-white transition"
+            >
+              <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+          </div>
+
+          <!-- פאנל הוידאו של המצלמה -->
+          <div class="relative aspect-[4/3] bg-black flex items-center justify-center overflow-hidden">
+            <video 
+              id="camera-video"
+              playsinline 
+              muted 
+              class="h-full w-full object-cover"
+            ></video>
+            
+            <!-- סימון שלט למיקום הקבלה -->
+            <div class="absolute inset-4 pointer-events-none border-2 border-dashed border-indigo-400/40 rounded-xl flex items-center justify-center">
+              <span class="text-[10px] text-white/50 bg-black/60 rounded px-2.5 py-1 font-bold">
+                מקם את הקבלה בצורה ברורה בתוך המסגרת
+              </span>
+            </div>
+          </div>
+
+          <!-- סטטוס אלגוריתם הדחיסה -->
+          <div 
+            id="camera-compression-status-bar"
+            class="hidden bg-slate-950 px-5 py-3 text-center text-xs border-t border-white/5"
+          >
+            <div class="flex items-center justify-center gap-2">
+              <span class="h-4 w-4 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent"></span>
+              <span id="camera-status-text" class="font-medium text-indigo-300">מעבד תמונה...</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between px-6 py-5 bg-slate-950">
+            <button 
+              type="button" 
+              onclick="stopCamera()" 
+              class="text-xs font-semibold text-slate-400 hover:text-white"
+            >
+              ביטול
+            </button>
+
+            <button 
+              type="button"
+              onclick="captureSnapshotAndCompress()"
+              class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-505 text-white transition-all shadow-md shadow-indigo-500/20"
+              title="צלם תמונה כעת"
+            >
+              <span class="h-6 w-6 rounded-full border-2 border-white"></span>
+            </button>
+
+            <div class="w-[45px]"></div>
+          </div>
+
+        </div>
+      </div>
+
+      
+      <!-- ==========================================
+          מודאל הוספת/עריכת פעילות חדשה (Add/Edit Activity Modal)
+         ========================================== -->
+      <div 
+        id="activity-modal-backdrop"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      >
+        <div class="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-xl text-right">
+          <div class="flex items-center justify-between border-b pb-3 mb-4 border-slate-100">
+            <h3 class="text-sm font-bold text-slate-850 flex items-center gap-1.5 select-none font-sans">
+              <i data-lucide="plus-circle" class="h-4.5 w-4.5 text-indigo-600"></i>
+              <span id="activity-modal-title">הוספת פעילות שנתית חדשה</span>
+            </h3>
+            <button onclick="closeAddActivityModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+              <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+          </div>
+
+          <form id="form-add-activity" onsubmit="saveNewActivity(event)" class="space-y-4">
+            <input type="hidden" id="modal-activity-id" />
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">שם הפעילות *</label>
+              <input 
+                type="text" 
+                id="modal-activity-name" 
+                required
+                placeholder="לדוגמה: מחנה פסח, מסיבת סוף שנה..." 
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">תיאור קצר</label>
+              <textarea 
+                id="modal-activity-desc" 
+                rows="2"
+                placeholder="פירוט כללי על הפעילות והיעדים..." 
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-505"
+              ></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">תשלום משוער להורה (₪) *</label>
+                <input 
+                  type="number" 
+                  id="modal-activity-price" 
+                  min="0"
+                  required
+                  placeholder="0"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">כמות משתתפים משוערת *</label>
+                <input 
+                  type="number" 
+                  id="modal-activity-qty" 
+                  min="0"
+                  required
+                  placeholder="0"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+              <button 
+                type="button" 
+                onclick="closeAddActivityModal()" 
+                class="rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 px-4 py-2 transition"
+              >
+                ביטול
+              </button>
+              <button 
+                type="submit" 
+                id="modal-activity-submit-btn"
+                class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white px-5 py-2 shadow-xs transition"
+              >
+                צור פעילות
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ==========================================
+          מודאל ניהול ועריכת פריט תקציב (Edit/Add Budget Item Modal)
+         ========================================== -->
+      <div 
+        id="budget-item-modal-backdrop"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      >
+        <div class="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-xl text-right">
+          <div class="flex items-center justify-between border-b pb-3 mb-4 border-slate-100">
+            <h3 class="text-sm font-bold text-slate-850 flex items-center gap-1.5 select-none font-sans">
+              <i data-lucide="edit-3" class="h-4.5 w-4.5 text-indigo-750"></i>
+              <span id="budget-modal-title">עריכת מרכיב הוצאה</span>
+            </h3>
+            <button onclick="closeBudgetItemModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+              <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+          </div>
+
+          <form id="form-budget-item" onsubmit="saveBudgetItemModal(event)" class="space-y-4">
+            <input type="hidden" id="modal-item-id" />
+            <input type="hidden" id="modal-item-activity-id" />
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">שם מרכיב ההוצאה *</label>
+              <input 
+                type="text" 
+                id="modal-item-name" 
+                required
+                placeholder="לדוגמה: אוטובוסים והסעות, השכרת סאונד, רכישת חולצות..." 
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <!-- אפשרות חישוב -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">אופן חישוב התקציב</label>
+              <div class="flex gap-4">
+                <label class="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="modal-item-type" 
+                    value="global" 
+                    id="modal-type-global"
+                    onchange="toggleModalTypeFields(false)" 
+                    class="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>עלות גלובלית כוללת (ריכוז מרוכז)</span>
+                </label>
+                <label class="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="modal-item-type" 
+                    value="unit" 
+                    id="modal-type-unit"
+                    onchange="toggleModalTypeFields(true)" 
+                    class="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>עירוך לפי מחיר יחידה וכמות</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- אזור מספרים: הערכה מתוכננת -->
+            <div class="rounded-xl bg-slate-50/70 border border-slate-100 p-3">
+              <span class="block text-[11px] font-bold text-indigo-950 mb-2">1. הערכה מתוכננת (תקציב יעד)</span>
+              
+              <!-- שדות מחיר יחידה וכמות -->
+              <div id="modal-est-unit-priced-fields" class="hidden grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] text-slate-500 mb-1">מחיר משוער ליחידה (₪)</label>
+                  <input 
+                    type="number" 
+                    id="modal-item-est-price" 
+                    min="0"
+                    placeholder="0"
+                    oninput="calcModalLiveTotal()"
+                    class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-500 mb-1">כמות יחידות משוערת</label>
+                  <input 
+                    type="number" 
+                    id="modal-item-est-qty" 
+                    min="0"
+                    placeholder="0"
+                    oninput="calcModalLiveTotal()"
+                    class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <!-- שדה סכום גלובלי -->
+              <div id="modal-est-global-fields">
+                <label class="block text-[10px] text-slate-500 mb-1">סך הכל סכום משוער (₪)</label>
+                <input 
+                  type="number" 
+                  id="modal-item-est-total" 
+                  min="0"
+                  placeholder="0"
+                  oninput="calcModalLiveTotal()"
+                  class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div class="mt-2 text-right text-[11px] font-bold text-slate-600 font-sans">
+                סה"כ הערכה מתוכננת: <span id="modal-live-est-total" class="text-indigo-600">₪0</span>
+              </div>
+            </div>
+
+            <!-- אזור מספרים: הוצאות בפועל ודיווח כספי -->
+            <div class="rounded-xl bg-emerald-50/40 border border-emerald-100 p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="block text-[11px] font-bold text-emerald-950">2. דיווח הוצאה וגבייה בפועל</span>
+                <button 
+                  type="button" 
+                  onclick="copyEstToActInModal()" 
+                  class="text-[10px] text-emerald-700 hover:text-emerald-900 underline font-extrabold"
+                >
+                  העתק מהערכה מתוכננת
+                </button>
+              </div>
+
+              <!-- שדות מחיר יחידה וכמות בפועל -->
+              <div id="modal-act-unit-priced-fields" class="hidden grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] text-emerald-800/80 mb-1">מחיר בפועל ליחידה (₪)</label>
+                  <input 
+                    type="number" 
+                    id="modal-item-act-price" 
+                    min="0"
+                    placeholder="לא דווח"
+                    oninput="calcModalLiveTotal()"
+                    class="w-full rounded-lg border border-emerald-100 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-emerald-800/80 mb-1">כמות יחידות בפועל</label>
+                  <input 
+                    type="number" 
+                    id="modal-item-act-qty" 
+                    min="0"
+                    placeholder="לא דווח"
+                    oninput="calcModalLiveTotal()"
+                    class="w-full rounded-lg border border-emerald-100 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <!-- שדה סכום גלובלי בפועל -->
+              <div id="modal-act-global-fields">
+                <label class="block text-[10px] text-emerald-800/80 mb-1">סה"כ סכום ששולם בפועל (₪)</label>
+                <input 
+                  type="number" 
+                  id="modal-item-act-total" 
+                  min="0"
+                  placeholder="לא דווח"
+                  oninput="calcModalLiveTotal()"
+                  class="w-full rounded-lg border border-emerald-100 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div class="mt-2 text-right text-[11px] font-bold text-slate-600 flex justify-between font-sans">
+                <span>סה"כ עלות בפועל: <span id="modal-live-act-total" class="text-emerald-700 font-extrabold">--</span></span>
+                <button 
+                  type="button" 
+                  id="modal-btn-clear-actual" 
+                  onclick="clearActualInModal()" 
+                  class="hidden text-[10px] text-rose-600 hover:underline"
+                >
+                  אפס דיווח בפועל
+                </button>
+              </div>
+            </div>
+
+            <!-- אזור קבלה בתוך המודאל -->
+            <div class="border-t border-slate-100 pt-3">
+              <span class="block text-xs font-bold text-slate-700 mb-1.5">הוכחת תשלום וצילום קבלה</span>
+              
+              <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 border border-slate-150">
+                <div class="flex items-center gap-1.5">
+                  <span id="modal-receipt-indicator" class="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                  <span id="modal-receipt-status" class="text-[10px] font-bold text-slate-600">אין קבלה משויכת</span>
+                </div>
+                
+                <div class="flex items-center gap-1.5">
+                  <button 
+                    type="button" 
+                    onclick="triggerCameraFromModal()" 
+                    class="inline-flex items-center gap-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-250 px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all"
+                  >
+                    <i data-lucide="camera" class="h-3 w-3 text-indigo-600"></i>
+                    <span>מצלמה</span>
+                  </button>
+                  <label class="cursor-pointer inline-flex items-center gap-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-250 px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all">
+                    <i data-lucide="upload" class="h-3 w-3 text-indigo-600"></i>
+                    <span>קובץ</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      id="modal-file-input"
+                      class="hidden" 
+                      onchange="handleModalFileUpload(event)"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <!-- תצוגה מקדימה של קבלה והסרה -->
+              <div id="modal-receipt-preview-container" class="hidden mt-3 p-2 bg-indigo-50/50 border border-indigo-100 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="h-10 w-10 overflow-hidden rounded bg-slate-50 border border-indigo-150">
+                    <img id="modal-receipt-img" src="" alt="קבלה" class="h-full w-full object-cover" />
+                  </div>
+                  <span class="text-[10px] font-bold text-slate-700">תצוגה מקדימה של הקבלה מנוהלת ומכווצת</span>
+                </div>
+                <button 
+                  type="button" 
+                  onclick="removeModalReceipt()" 
+                  class="text-[10px] text-rose-600 hover:underline font-bold"
+                >
+                  הסרת קבלה
+                </button>
+              </div>
+            </div>
+
+            <!-- לחצני סיום ומחיקה -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <!-- כפתור מחיקה (רק בעריכת פריט קיים) -->
+              <button 
+                type="button" 
+                id="modal-btn-delete-item" 
+                onclick="deleteItemFromModal()" 
+                class="rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 px-4 py-2 text-xs font-bold transition flex items-center gap-1"
+              >
+                <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                <span>מחק מרכיב הוצאה</span>
+              </button>
+
+              <div class="flex gap-2">
+                <button 
+                  type="button" 
+                  onclick="closeBudgetItemModal()" 
+                  class="rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 px-4 py-2 transition"
+                >
+                  ביטול
+                </button>
+                <button 
+                  type="submit" 
+                  class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white px-5 py-2 shadow-xs transition"
+                >
+                  שמור שינויים
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+<!-- ==========================================
+          הנחיות ומדריך שימוש קצר למזכירות הנוער
+         ========================================== -->
+      <footer class="mt-auto bg-slate-100 border-t border-slate-200 py-4 text-slate-605 font-sans">
+        <div class="mx-auto max-w-7xl px-4 lg:px-8">
+          
+          <div class="text-center text-xs text-slate-400 font-medium font-sans">
+          </div>
+
+        </div>
+      </footer>
+
+    </div>
+
+    <!-- ==========================================
+        לוגיקה ואלגוריתמים (JavaScript Engine)
+       ========================================== -->
+    <script>
+      // ==========================================
+      // נתוני דמו התחלתיים (Initial Samples)
+      // ==========================================
+      const INITIAL_ACTIVITIES = [
+        {
+          id: 'act-sample-1',
+          name: 'טיול קיץ שנתי לגליל העליון',
+          description: 'טיול שלושה ימים הכולל לינת שטח, מסלול נחלים ואטרקציות מים לנוער כיתות ז׳-יב׳.',
+          parent_payment_est_price: 180,
+          parent_payment_est_qty: 60,
+          parent_payment_act_price: 180,
+          parent_payment_act_qty: 55,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'act-sample-2',
+          name: 'ערב שיא ופתיחת שנת פעילות',
+          description: 'הפנינג פתיחת שנה קהילתי לנוער והורים, כולל דוכני מזון, מתקני מתנפחים והופעת אורח.',
+          parent_payment_est_price: 25,
+          parent_payment_est_qty: 120,
+          parent_payment_act_price: null,
+          parent_payment_act_qty: null,
+          created_at: new Date().toISOString()
+        }
+      ];
+
+      const INITIAL_BUDGET_ITEMS = [
+        {
+          id: 'item-1',
+          activity_id: 'act-sample-1',
+          name: 'אוטובוסים והסעות (חברת מטיילי הצפון)',
+          is_unit_priced: true,
+          est_price_per_unit: 1400,
+          est_qty: 3,
+          est_total_price: 4200,
+          act_price_per_unit: 1350,
+          act_qty: 3,
+          act_total_price: 4050,
+          receipt_url_or_base64: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'item-2',
+          activity_id: 'act-sample-1',
+          name: 'אבטחה, רפואה וחובשים מלווים',
+          is_unit_priced: true,
+          est_price_per_unit: 950,
+          est_qty: 3,
+          est_total_price: 2850,
+          act_price_per_unit: 950,
+          act_qty: 3,
+          act_total_price: 2850,
+          receipt_url_or_base64: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'item-3',
+          activity_id: 'act-sample-1',
+          name: 'כניסות לאתרים ופארק מים',
+          is_unit_priced: true,
+          est_price_per_unit: 45,
+          est_qty: 60,
+          est_total_price: 2700,
+          act_price_per_unit: 45,
+          act_qty: 55,
+          act_total_price: 2475,
+          receipt_url_or_base64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'item-4',
+          activity_id: 'act-sample-2',
+          name: 'השכרת מתנפחים ומתקנים אתגריים',
+          is_unit_priced: false,
+          est_price_per_unit: 0,
+          est_qty: 0,
+          est_total_price: 3200,
+          act_price_per_unit: null,
+          act_qty: null,
+          act_total_price: null,
+          receipt_url_or_base64: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'item-5',
+          activity_id: 'act-sample-2',
+          name: 'דוכני מזון, פופקורן וגומי',
+          is_unit_priced: false,
+          est_price_per_unit: 0,
+          est_qty: 0,
+          est_total_price: 1500,
+          act_price_per_unit: null,
+          act_qty: null,
+          act_total_price: null,
+          receipt_url_or_base64: null,
+          created_at: new Date().toISOString()
+        }
+      ];
+
+      // ==========================================
+      // המצב הגלובלי (Global Application State)
+      // ==========================================
+      let activities = [];
+      let budgetItems = [];
+      let selectedActivityId = '';
+      
+      let supabaseUrl = 'https://rbckzxfgtitknlfkfnhv.supabase.co';
+      let supabaseKey = 'sb_publishable_CtYnbiiIcNlZVq9rmQwofg_htbw8lA5';
+      let dbStatus = 'connected'; // 'connected' | 'error'
+      let isSyncing = false;
+
+      // מצבי תצוגה
+      let showConfig = false;
+      let showAddActivity = false;
+      let editingParentActualsId = null;
+
+      // שדות זמניים לטפסים (היאחזות בערכים לפני הוספה)
+      let currentItemIsUnit = false;
+
+      // ניהול מצלמה
+      let isCameraActive = false;
+      let cameraTargetItemId = null;
+      let isCompressing = false;
+      let localStream = null;
+
+      // ==========================================
+      // פונקציות טעינה ואתחול (Initialization)
+      // ==========================================
+      window.addEventListener('DOMContentLoaded', () => {
+        loadDataFromStorage();
+        initInputFields();
+        testSupabaseConnection(false);
+        renderAll();
+      });
+
+      function loadDataFromStorage() {
+        // טעינת פעילויות
+        const savedActivities = localStorage.getItem('youth_budget_activities');
+        if (savedActivities) {
+          activities = JSON.parse(savedActivities);
+        } else {
+          activities = [...INITIAL_ACTIVITIES];
+          localStorage.setItem('youth_budget_activities', JSON.stringify(activities));
+        }
+
+        // טעינת מרכיבי תקציב
+        const savedItems = localStorage.getItem('youth_budget_items');
+        if (savedItems) {
+          budgetItems = JSON.parse(savedItems);
+        } else {
+          budgetItems = [...INITIAL_BUDGET_ITEMS];
+          localStorage.setItem('youth_budget_items', JSON.stringify(budgetItems));
+        }
+
+        // הגדרת פעילות פעילה
+        const lastSelected = localStorage.getItem('youth_budget_selected_id');
+        if (lastSelected && activities.some(a => a.id === lastSelected)) {
+          selectedActivityId = lastSelected;
+        } else if (activities.length > 0) {
+          selectedActivityId = activities[0].id;
+        }
+      }
+
+      function saveDataToStorage() {
+        localStorage.setItem('youth_budget_activities', JSON.stringify(activities));
+        localStorage.setItem('youth_budget_items', JSON.stringify(budgetItems));
+        localStorage.setItem('youth_budget_selected_id', selectedActivityId);
+      }
+
+      function initInputFields() {
+        // שינוי בחירת שיטת חישוב בטופס הוספת פריט הופך שדות מודאליים
+        window.handleItemTypeChange = function(selectEl) {
+          currentItemIsUnit = (selectEl.value === 'unit');
+          renderActivitiesList();
+        };
+      }
+
+      // ==========================================
+      // שירותי Supabase (Supabase Client Integration)
+      // ==========================================
+      async function testSupabaseConnection(showNotify = true) {
+        if (!supabaseUrl || !supabaseKey) {
+          dbStatus = 'error';
+          updateDbStatusBadge();
+          return;
+        }
+
+        try {
+          const client = supabase.createClient(supabaseUrl, supabaseKey);
+          // בדיקת קריאה קלה מהטבלה
+          const { error } = await client.from('activities').select('id').limit(1);
+          if (error) throw error;
+
+          dbStatus = 'connected';
+          updateDbStatusBadge();
+          if (showNotify) {
+            showNotification('החיבור ל-Supabase בוצע בהצלחה! האפליקציה מסונכרנת לענן.', 'emerald');
+          }
+          
+          // שאיבת נתונים ראשונית מהשרת
+          await fetchAllFromSupabase(client);
+        } catch (err) {
+          console.error('Supabase connection error:', err);
+          dbStatus = 'error';
+          updateDbStatusBadge();
+          if (showNotify) {
+            showNotification(`שגיאת התחברות ל-Supabase: ${err.message || 'אנא בדוק את החיבור לרשת.'}`, 'red');
+          }
+        }
+      }
+
+      async function fetchAllFromSupabase(client) {
+        try {
+          const { data: serverActs, error: error1 } = await client
+            .from('activities')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (error1) throw error1;
+
+          const { data: serverItems, error: error2 } = await client
+            .from('budget_items')
+            .select('*')
+            .order('created_at', { ascending: true });
+          if (error2) throw error2;
+
+          if (serverActs) {
+            activities = serverActs;
+          }
+          if (serverItems) {
+            budgetItems = serverItems;
+          }
+
+          if (activities.length > 0 && (!selectedActivityId || !activities.some(a => a.id === selectedActivityId))) {
+            selectedActivityId = activities[0].id;
+          }
+
+          saveDataToStorage();
+          renderAll();
+        } catch (err) {
+          console.error(err);
+          showNotification(`שגיאה בטעינת נתוני שרת: ${err.message}`, 'red');
+        }
+      }
+
+
+
+
+      // ==========================================
+      // נוסחאות פיננסיות וחישובים (Calculations Engine)
+      // ==========================================
+      function activityHasActualReport(activityId) {
+        const act = activities.find(a => a.id === activityId);
+        if (!act) return false;
+        
+        const parentReported = act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null;
+        const items = budgetItems.filter(item => item.activity_id === activityId);
+        const itemReported = items.some(item => item.act_total_price !== null);
+        
+        return parentReported || itemReported;
+      }
+
+      function getActivityCalculations(act) {
+        const items = budgetItems.filter(item => item.activity_id === act.id);
+        
+        const totalEstCost = items.reduce((sum, item) => sum + item.est_total_price, 0);
+        const totalActCost = items.reduce((sum, item) => sum + (item.act_total_price !== null ? item.act_total_price : 0), 0);
+        
+        const estParentFunding = act.parent_payment_est_price * act.parent_payment_est_qty;
+        const actParentFunding = (act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null)
+          ? (act.parent_payment_act_price * act.parent_payment_act_qty)
+          : 0;
+          
+        const estCommitteeFunding = Math.max(0, totalEstCost - estParentFunding);
+        const actCommitteeFunding = activityHasActualReport(act.id)
+          ? Math.max(0, totalActCost - actParentFunding)
+          : 0;
+
+        return {
+          totalEstCost,
+          totalActCost,
+          estParentFunding,
+          actParentFunding,
+          estCommitteeFunding,
+          actCommitteeFunding,
+          hasActualReport: activityHasActualReport(act.id)
+        };
+      }
+
+
+      // ==========================================
+      // מערכת רנדור וניהול רספונסיבי (View Renderer)
+      // ==========================================
+      function renderAll() {
+        renderStats();
+        renderActivitiesList();
+        // renderSelectedActivityPane(); // removed for unified inline accordion
+        lucide.createIcons();
+      }
+
+      function renderStats() {
+        let totalYearlyEstBudget = 0;
+        let totalYearlyActCost = 0;
+        let totalCostIncludingPlanned = 0;
+
+        let totalActualCommitteeFunded = 0;
+        let totalExpectedCommitteeFunding = 0;
+
+        let totalYearlyEstParentFunding = 0;
+        let totalYearlyActParentFunding = 0;
+        let totalParentsIncludingPlanned = 0;
+
+        activities.forEach(act => {
+          const calcs = getActivityCalculations(act);
+          totalYearlyEstBudget += calcs.totalEstCost;
+          totalYearlyActCost += calcs.totalActCost;
+          totalCostIncludingPlanned += calcs.hasActualReport ? calcs.totalActCost : calcs.totalEstCost;
+
+          totalActualCommitteeFunded += calcs.actCommitteeFunding;
+          if (calcs.hasActualReport) {
+            totalExpectedCommitteeFunding += calcs.actCommitteeFunding;
+          } else {
+            totalExpectedCommitteeFunding += calcs.estCommitteeFunding;
+          }
+
+          totalYearlyEstParentFunding += calcs.estParentFunding;
+          totalYearlyActParentFunding += calcs.actParentFunding;
+          totalParentsIncludingPlanned += calcs.hasActualReport ? calcs.actParentFunding : calcs.estParentFunding;
+        });
+
+        const actCountBadge = document.getElementById('activities-count-badge');
+        if (actCountBadge) {
+          actCountBadge.innerText = `סה"כ פעילויות: ${activities.length}`;
+        }
+
+        // 1. סה"כ עלות פעילויות
+        const costActEl = document.getElementById('stats-cost-act');
+        const costCombinedEl = document.getElementById('stats-cost-combined');
+        if (costActEl) costActEl.innerText = `₪${totalYearlyActCost.toLocaleString()}`;
+        if (costCombinedEl) costCombinedEl.innerText = `₪${totalCostIncludingPlanned.toLocaleString()}`;
+
+        // 2. סה"כ מתקציב הוועדה
+        const commActEl = document.getElementById('stats-committee-act');
+        const commCombinedEl = document.getElementById('stats-committee-combined');
+        if (commActEl) commActEl.innerText = `₪${totalActualCommitteeFunded.toLocaleString()}`;
+        if (commCombinedEl) commCombinedEl.innerText = `₪${totalExpectedCommitteeFunding.toLocaleString()}`;
+
+        // 3. סה"כ מימון משתתפים
+        const parentsActEl = document.getElementById('stats-parents-act');
+        const parentsCombinedEl = document.getElementById('stats-parents-combined');
+        if (parentsActEl) parentsActEl.innerText = `₪${totalYearlyActParentFunding.toLocaleString()}`;
+        if (parentsCombinedEl) parentsCombinedEl.innerText = `₪${totalParentsIncludingPlanned.toLocaleString()}`;
+      }
+
+
+      // Keep track of which activities are expanded
+      let expandedActivityIds = new Set();
+
+      function toggleActivityExpand(actId) {
+        if (expandedActivityIds.has(actId)) {
+          expandedActivityIds.delete(actId);
+        } else {
+          expandedActivityIds.add(actId);
+        }
+        renderActivitiesList();
+      }
+
+
+      function renderActivitiesList() {
+        const container = document.getElementById('activities-list-container');
+        if (!container) return;
+
+        if (activities.length === 0) {
+          container.innerHTML = `
+            <div class="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center text-slate-500">
+              <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-4">
+                <i data-lucide="briefcase" class="h-6 w-6"></i>
+              </span>
+              <p class="text-sm font-semibold text-slate-850">לא נמצאה שום פעילות שנתית מתוכננת.</p>
+              <p class="text-xs text-slate-400 mt-1">לחץ על כפתור ״הוסף פעילות״ למעלה כדי להתחיל.</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        let html = '';
+        activities.forEach(act => {
+          const calcs = getActivityCalculations(act);
+          const isExpanded = expandedActivityIds.has(act.id);
+          const isEditingParents = editingParentActualsId === act.id;
+          const actItems = budgetItems.filter(item => item.activity_id === act.id);
+
+          // Header summary elements
+          const parentText = `מתוכנן: ₪${calcs.estParentFunding.toLocaleString()}` + 
+            (act.parent_payment_act_price !== null ? ` | בפועל: <span class="text-emerald-700 font-extrabold">₪${calcs.actParentFunding.toLocaleString()}</span>` : '');
+
+          const committeeText = `מתוכנן: ₪${calcs.estCommitteeFunding.toLocaleString()}` + 
+            (calcs.hasActualReport ? ` | בפועל: <span class="text-indigo-700 font-extrabold">₪${calcs.actCommitteeFunding.toLocaleString()}</span>` : '');
+
+          html += `
+            <div 
+              id="activity-card-${act.id}"
+              class="rounded-2xl border bg-white shadow-xs hover:border-slate-350 transition-all overflow-hidden ${isExpanded ? 'border-indigo-300 ring-1 ring-indigo-50/50' : 'border-slate-200'}"
+            >
+              <!-- Card Header: Collapsed/clickable top bar -->
+              <div 
+                onclick="toggleActivityExpand('${act.id}')"
+                class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 cursor-pointer hover:bg-slate-50/20 transition select-none text-right"
+              >
+                <div class="flex items-start gap-3">
+                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                    <i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="h-5 w-5"></i>
+                  </span>
+                  <div>
+                    <h4 class="font-extrabold text-slate-900 text-sm md:text-base flex items-center gap-2">
+                      <span>${act.name}</span>
+                      <span class="rounded-full px-2 py-0.5 text-[9px] font-black ${
+                        calcs.hasActualReport 
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' 
+                          : 'bg-indigo-50 text-indigo-700 border border-indigo-250'
+                      }">
+                        ${calcs.hasActualReport ? '✅ דווח בפועל' : '📝 בתכנון'}
+                      </span>
+                    </h4>
+                    <p class="text-[11px] text-slate-450 mt-1 line-clamp-1 max-w-[500px]">${act.description || 'ללא תיאור לפעילות זו'}</p>
+                  </div>
+                </div>
+
+                <!-- Collapsed values -->
+                <div class="grid grid-cols-3 gap-4 md:gap-6 text-right md:border-r md:border-dashed md:border-slate-200 md:pr-6 md:mr-4">
+                  <div>
+                    <span class="block text-[9px] font-bold text-slate-400 uppercase">עלות מוערכת</span>
+                    <span class="font-extrabold text-slate-800 text-xs md:text-sm">₪${calcs.totalEstCost.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span class="block text-[9px] font-bold text-slate-400 uppercase">מימון הורים</span>
+                    <span class="text-[11px] font-medium text-slate-700 block mt-0.5">${parentText}</span>
+                  </div>
+                  <div>
+                    <span class="block text-[9px] font-bold text-slate-400 uppercase">מימון ועדה</span>
+                    <span class="text-[11px] font-medium text-slate-700 block mt-0.5">${committeeText}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Expanded area -->
+              ${isExpanded ? `
+                <div class="border-t border-slate-100 bg-slate-50/20 p-4">
+                  
+                  <!-- 1. Parent Funding and Action buttons -->
+                  <div class="mb-5 p-4 rounded-xl border border-slate-150 bg-white shadow-2xs text-right">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-slate-100">
+                      <div class="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                        <i data-lucide="users" class="h-4 w-4 text-indigo-600"></i>
+                        <span>תקבולים ותשלומי הורים לפעילות</span>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <button
+                          onclick="event.stopPropagation(); window.openEditActivityModal('${act.id}')"
+                          class="inline-flex items-center gap-1 text-[10px] text-indigo-600 hover:text-indigo-800 font-extrabold px-2.5 py-1 rounded-lg border border-indigo-100 hover:bg-indigo-50 transition"
+                          title="ערוך פרטי פעילות ותקציב הורים מתוכנן"
+                        >
+                          <i data-lucide="edit-2" class="h-3 w-3"></i>
+                          <span>ערוך פעילות</span>
+                        </button>
+                        <button
+                          onclick="event.stopPropagation(); deleteActivity(event, '${act.id}', '${act.name}')"
+                          class="inline-flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-800 font-extrabold px-2.5 py-1 rounded-lg border border-rose-100 hover:bg-rose-50 transition"
+                          title="מחק את כל הפעילות"
+                        >
+                          <i data-lucide="trash-2" class="h-3 w-3"></i>
+                          <span>מחק פעילות</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <!-- מתוכנן גבייה -->
+                      <div>
+                        <span class="block text-[10px] text-slate-400 font-bold">תקציב הורים מתוכנן</span>
+                        <div class="text-xs text-slate-700 mt-1 font-medium">
+                          סה"כ מתוכנן: <span class="font-extrabold text-slate-900">₪${calcs.estParentFunding.toLocaleString()}</span>
+                          <span class="text-slate-400 mr-1">(${act.parent_payment_est_qty} משתתפים × ₪${act.parent_payment_est_price})</span>
+                        </div>
+                      </div>
+
+                      <!-- גבייה בפועל -->
+                      <div class="bg-emerald-50/20 rounded-lg p-2 border border-emerald-100/50">
+                        <span class="block text-[10px] text-emerald-800 font-bold">גבייה בפועל מהורים</span>
+                        <div class="text-xs text-slate-700 mt-1">
+                          ${act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null ? `
+                            סה"כ נגבה: <span class="font-extrabold text-emerald-700">₪${calcs.actParentFunding.toLocaleString()}</span>
+                            <span class="text-slate-400 mr-1">(${act.parent_payment_act_qty} משתתפים × ₪${act.parent_payment_act_price})</span>
+                          ` : `
+                            <span class="text-slate-400 italic">טרם דווחו נתוני גבייה</span>
+                          `}
+                        </div>
+                        
+                        ${!isEditingParents ? `
+                          <div class="mt-2 flex gap-3 text-[10px] font-extrabold">
+                            <button
+                              onclick="startEditParents('${act.id}', ${act.parent_payment_act_price}, ${act.parent_payment_act_qty}, ${act.parent_payment_est_price}, ${act.parent_payment_est_qty})"
+                              class="text-indigo-600 hover:text-indigo-800 underline"
+                            >
+                              עדכן נתוני גבייה
+                            </button>
+                            ${act.parent_payment_act_price === null ? `
+                              <button
+                                onclick="quickCopyParentEstToAct('${act.id}')"
+                                class="text-emerald-700 hover:text-emerald-950 underline"
+                              >
+                                העתק מהאומדן
+                              </button>
+                            ` : ''}
+                          </div>
+                        ` : ''}
+                      </div>
+
+                      <!-- השלמת ועדת נוער -->
+                      <div>
+                        <span class="block text-[10px] text-slate-400 font-bold">מימון ועדת נוער (השלמה)</span>
+                        <div class="text-xs text-slate-700 mt-1 font-medium font-sans">
+                          צפי השלמה: <span class="font-extrabold text-slate-900">₪${calcs.estCommitteeFunding.toLocaleString()}</span>
+                          ${calcs.hasActualReport ? `
+                            <span class="block text-indigo-700 font-extrabold mt-0.5">סופי בפועל: ₪${calcs.actCommitteeFunding.toLocaleString()}</span>
+                          ` : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- עריכת תשלומי הורים בפועל בתיבה קופצת -->
+                    ${isEditingParents ? `
+                      <div class="mt-3 rounded-xl border border-indigo-100 bg-white p-3 shadow-inner" onclick="event.stopPropagation()">
+                        <h5 class="text-[10px] font-black text-indigo-950 mb-2">עריכת גבייה בפועל מהורים</h5>
+                        <div class="flex flex-wrap gap-3 items-end">
+                          <div>
+                            <label class="block text-[9px] text-slate-400 mb-1">תשלום הורה בפועל (₪)</label>
+                            <input 
+                              type="number" 
+                              id="input-parents-act-price-${act.id}"
+                              placeholder="מחיר הורה"
+                              class="w-24 rounded-lg border border-slate-205 px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label class="block text-[9px] text-slate-450 mb-1">משתתפים בפועל ששילמו</label>
+                            <input 
+                              type="number" 
+                              id="input-parents-act-qty-${act.id}"
+                              placeholder="כמות"
+                              class="w-24 rounded-lg border border-slate-205 px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none"
+                            />
+                          </div>
+                          <div class="flex gap-2 mr-auto pt-2 sm:pt-0">
+                            <button
+                              type="button"
+                              onclick="cancelEditParents(event)"
+                              class="rounded-lg bg-slate-100 hover:bg-slate-200 px-3 py-1.5 text-[10px] font-bold text-slate-700"
+                            >
+                              ביטול
+                            </button>
+                            <button
+                              type="button"
+                              onclick="saveParentActuals(event, '${act.id}')"
+                              class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 text-[10px] font-black text-white"
+                            >
+                              שמור גבייה
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <!-- 2. Budget Items Dense List Table -->
+                  <div class="bg-white rounded-xl border border-slate-150 p-3 shadow-2xs">
+                    <div class="flex items-center justify-between border-b pb-2 mb-2">
+                      <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <i data-lucide="receipt" class="h-4 w-4 text-indigo-600"></i>
+                        <span>מרכיבי התקציב וקבלות</span>
+                      </span>
+                      <span class="text-[10px] text-slate-400 font-bold">סה"כ: ${actItems.length} סעיפים</span>
+                    </div>
+
+                    ${actItems.length === 0 ? `
+                      <div class="py-6 text-center text-slate-400 text-xs italic">
+                        אין כרגע מרכיבי תקציב לפעילות זו. לחץ על כפתור ״הוסף מרכיב תקציב״ למטה.
+                      </div>
+                    ` : `
+                      <!-- Dense Table Container -->
+                      <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs border-collapse">
+                          <thead>
+                            <tr class="border-b border-slate-100 text-slate-400 font-bold select-none text-[11px]">
+                              <th class="py-2 px-2 text-right">שם המרכיב</th>
+                              <th class="py-2 px-2 text-center">מחיר יחידה</th>
+                              <th class="py-2 px-2 text-center">כמות</th>
+                              <th class="py-2 px-2 text-left">עלות כוללת</th>
+                              <th class="py-2 px-2 text-center">קבלה</th>
+                              <th class="py-2 px-1 text-center w-12">חידוש</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-slate-100 text-[11px]">
+                            ${actItems.map(item => {
+                              const hasReceipt = item.receipt_url_or_base64 !== null;
+                              
+                              const unitPriceHtml = item.is_unit_priced 
+                                ? `<div>₪${item.est_price_per_unit.toLocaleString()}</div>` + 
+                                  (item.act_price_per_unit !== null ? `<div class="text-[9px] text-emerald-700 font-bold">בפועל: ₪${item.act_price_per_unit.toLocaleString()}</div>` : '')
+                                : '<span class="text-slate-300">-</span>';
+
+                              const qtyHtml = item.is_unit_priced 
+                                ? `<div>${item.est_qty}</div>` + 
+                                  (item.act_qty !== null ? `<div class="text-[9px] text-emerald-700 font-bold">בפועל: ${item.act_qty}</div>` : '')
+                                : '<span class="text-slate-300">-</span>';
+
+                              const totalHtml = `<div>₪${item.est_total_price.toLocaleString()}</div>` + 
+                                (item.act_total_price !== null ? `<div class="text-[10px] text-emerald-700 font-black">בפועל: ₪${item.act_total_price.toLocaleString()}</div>` : '');
+
+                              const receiptHtml = hasReceipt 
+                                ? `<button 
+                                     onclick="event.stopPropagation(); openReceiptInRawWindow('${item.receipt_url_or_base64}')"
+                                     class="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 hover:bg-emerald-100"
+                                     title="לחץ לצפייה בקבלה שצולמה"
+                                   >
+                                     <i data-lucide="image" class="h-3 w-3"></i>
+                                     <span>צפה</span>
+                                   </button>`
+                                : `<button 
+                                     onclick="event.stopPropagation(); openBudgetItemModal('${item.id}', '${act.id}')"
+                                     class="text-[9px] font-bold text-slate-400 bg-slate-100 rounded px-1 py-0.5 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 inline-flex items-center gap-0.5"
+                                   >
+                                     <i data-lucide="camera" class="h-2.5 w-2.5 text-indigo-600"></i>
+                                     <span>צרף</span>
+                                   </button>`;
+
+                              return `
+                                <tr class="hover:bg-slate-50/50 transition">
+                                  <td class="py-2 px-2 font-bold text-slate-800 text-right">
+                                    <div>${item.name}</div>
+                                  </td>
+                                  <td class="py-2 px-2 text-center text-slate-650 font-sans font-medium">${unitPriceHtml}</td>
+                                  <td class="py-2 px-2 text-center text-slate-655 font-sans font-medium">${qtyHtml}</td>
+                                  <td class="py-2 px-2 text-left text-slate-800 font-sans font-bold">${totalHtml}</td>
+                                  <td class="py-2 px-2 text-center">${receiptHtml}</td>
+                                  <td class="py-2 px-1 text-center">
+                                    <div class="flex items-center justify-center gap-1.5">
+                                      <button 
+                                        onclick="event.stopPropagation(); openBudgetItemModal('${item.id}', '${act.id}')"
+                                        class="text-slate-450 hover:text-indigo-600 p-0.5 rounded hover:bg-slate-100"
+                                        title="ערוך מרכיב תקציב"
+                                      >
+                                        <i data-lucide="edit-3" class="h-3.5 w-3.5"></i>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              `;
+                            }).join('')}
+                          </tbody>
+                        </table>
+                      </div>
+                    `}
+
+                    <!-- Add budge item trigger -->
+                    <div class="mt-3.5 pt-3 border-t border-slate-50 flex justify-center">
+                      <button 
+                        onclick="event.stopPropagation(); openBudgetItemModal(null, '${act.id}')"
+                        class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl text-xs font-bold text-white transition shadow-2xs"
+                      >
+                        <i data-lucide="plus-circle" class="h-3.5 w-3.5"></i>
+                        <span>הוסף מרכיב תקציב פנימי</span>
+                      </button>
+                    </div>
+
+                  </div>
+
+                </div>
+              ` : ''}
+              
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+        lucide.createIcons();
+      }
+
+
+      // ==========================================
+      // Modal controls for Adding / Editing Activity
+      // ==========================================
+      window.openAddActivityModal = function() {
+        document.getElementById('modal-activity-id').value = '';
+        document.getElementById('modal-activity-name').value = '';
+        document.getElementById('modal-activity-desc').value = '';
+        document.getElementById('modal-activity-price').value = '';
+        document.getElementById('modal-activity-qty').value = '';
+
+        document.getElementById('activity-modal-title').innerText = 'הוספת פעילות שנתית חדשה';
+        document.getElementById('modal-activity-submit-btn').innerText = 'צור פעילות';
+        
+        const modal = document.getElementById('activity-modal-backdrop');
+        modal.classList.remove('hidden');
+      };
+
+      window.openEditActivityModal = function(actId) {
+        const act = activities.find(a => a.id === actId);
+        if (!act) return;
+
+        document.getElementById('modal-activity-id').value = act.id;
+        document.getElementById('modal-activity-name').value = act.name;
+        document.getElementById('modal-activity-desc').value = act.description || '';
+        document.getElementById('modal-activity-price').value = act.parent_payment_est_price || 0;
+        document.getElementById('modal-activity-qty').value = act.parent_payment_est_qty || 0;
+
+        document.getElementById('activity-modal-title').innerText = 'עריכת פרטי פעילות ותקציב הורים מתוכנן';
+        document.getElementById('modal-activity-submit-btn').innerText = 'שמור שינויים';
+
+        const modal = document.getElementById('activity-modal-backdrop');
+        modal.classList.remove('hidden');
+      };
+
+      window.closeAddActivityModal = function() {
+        document.getElementById('activity-modal-backdrop').classList.add('hidden');
+      };
+
+      window.saveNewActivity = async function(event) {
+        event.preventDefault();
+        
+        const actId = document.getElementById('modal-activity-id').value;
+        const nameVal = document.getElementById('modal-activity-name').value.trim();
+        const descVal = document.getElementById('modal-activity-desc').value.trim();
+        const priceVal = Number(document.getElementById('modal-activity-price').value) || 0;
+        const qtyVal = Number(document.getElementById('modal-activity-qty').value) || 0;
+
+        if (!nameVal) return;
+
+        const isNew = !actId;
+        
+        if (isNew) {
+          const newId = crypto.randomUUID();
+          const newAct = {
+            id: newId,
+            name: nameVal,
+            description: descVal,
+            parent_payment_est_price: priceVal,
+            parent_payment_est_qty: qtyVal,
+            parent_payment_act_price: null,
+            parent_payment_act_qty: null,
+            created_at: new Date().toISOString()
+          };
+
+          activities.unshift(newAct);
+          expandedActivityIds.add(newId); // auto expand
+          saveDataToStorage();
+          closeAddActivityModal();
+          renderAll();
+
+          // Synch Supabase
+          if (dbStatus === 'connected') {
+            try {
+              const client = supabase.createClient(supabaseUrl, supabaseKey);
+              const { error } = await client.from('activities').insert(newAct);
+              if (error) throw error;
+              showNotification(`הפעילות "${newAct.name}" נוצרה וסונכרנה לענן בהצלחה!`, 'emerald');
+            } catch (err) {
+              console.error('New Activity Supabase synch error:', err);
+              showNotification(`שגיאה בגיבוי לענן: ${err.message}`, 'amber');
+            }
+          }
+        } else {
+          // Edit mode
+          const idx = activities.findIndex(a => a.id === actId);
+          if (idx !== -1) {
+            activities[idx].name = nameVal;
+            activities[idx].description = descVal;
+            activities[idx].parent_payment_est_price = priceVal;
+            activities[idx].parent_payment_est_qty = qtyVal;
+
+            saveDataToStorage();
+            closeAddActivityModal();
+            renderAll();
+
+            // Synch Supabase
+            if (dbStatus === 'connected') {
+              try {
+                const client = supabase.createClient(supabaseUrl, supabaseKey);
+                const { error } = await client.from('activities')
+                  .update({
+                    name: nameVal,
+                    description: descVal,
+                    parent_payment_est_price: priceVal,
+                    parent_payment_est_qty: qtyVal
+                  })
+                  .eq('id', actId);
+                if (error) throw error;
+                showNotification(`הפעילות "${nameVal}" עודכנה וסונכרנה לענן בהצלחה!`, 'emerald');
+              } catch (err) {
+                console.error('Update Activity Supabase synch error:', err);
+                showNotification(`עודכן מקומית; שגיאה בגיבוי לענן: ${err.message}`, 'amber');
+              }
+            }
+          }
+        }
+      };
+
+      // ==========================================
+      // Modal controls for Budget Item (Add/Edit)
+      // ==========================================
+      let modalReceiptBase64 = null;
+
+      window.openBudgetItemModal = function(itemId, activityId) {
+        const titleEl = document.getElementById('budget-modal-title');
+        const form = document.getElementById('form-budget-item');
+        
+        document.getElementById('modal-item-id').value = itemId || '';
+        document.getElementById('modal-item-activity-id').value = activityId || '';
+        document.getElementById('modal-item-name').value = '';
+        
+        modalReceiptBase64 = null;
+
+        if (!itemId) {
+          // Mode: ADDing item
+          titleEl.innerText = 'הוספת מרכיב הוצאה לפעילות';
+          document.getElementById('modal-type-global').checked = true;
+          toggleModalTypeFields(false);
+
+          document.getElementById('modal-item-est-price').value = '';
+          document.getElementById('modal-item-est-qty').value = '';
+          document.getElementById('modal-item-est-total').value = '';
+          
+          document.getElementById('modal-item-act-price').value = '';
+          document.getElementById('modal-item-act-qty').value = '';
+          document.getElementById('modal-item-act-total').value = '';
+
+          document.getElementById('modal-live-est-total').innerText = '₪0';
+          document.getElementById('modal-live-act-total').innerText = '--';
+          document.getElementById('modal-btn-delete-item').classList.add('hidden');
+          document.getElementById('modal-btn-clear-actual').classList.add('hidden');
+        } else {
+          // Mode: EDITing item
+          titleEl.innerText = 'עריכת מרכיב הוצאה';
+          const item = budgetItems.find(i => i.id === itemId);
+          if (!item) return;
+
+          document.getElementById('modal-item-name').value = item.name;
+          
+          if (item.is_unit_priced) {
+            document.getElementById('modal-type-unit').checked = true;
+            toggleModalTypeFields(true);
+            document.getElementById('modal-item-est-price').value = item.est_price_per_unit || '';
+            document.getElementById('modal-item-est-qty').value = item.est_qty || '';
+            document.getElementById('modal-item-act-price').value = item.act_price_per_unit !== null ? item.act_price_per_unit : '';
+            document.getElementById('modal-item-act-qty').value = item.act_qty !== null ? item.act_qty : '';
+          } else {
+            document.getElementById('modal-type-global').checked = true;
+            toggleModalTypeFields(false);
+            document.getElementById('modal-item-est-total').value = item.est_total_price || '';
+            document.getElementById('modal-item-act-total').value = item.act_total_price !== null ? item.act_total_price : '';
+          }
+
+          modalReceiptBase64 = item.receipt_url_or_base64;
+          
+          document.getElementById('modal-btn-delete-item').classList.remove('hidden');
+          
+          if (item.act_total_price !== null) {
+            document.getElementById('modal-btn-clear-actual').classList.remove('hidden');
+          } else {
+            document.getElementById('modal-btn-clear-actual').classList.add('hidden');
+          }
+          
+          calcModalLiveTotal();
+        }
+
+        updateModalReceiptUI();
+        
+        const backdrop = document.getElementById('budget-item-modal-backdrop');
+        backdrop.classList.remove('hidden');
+      };
+
+      window.closeBudgetItemModal = function() {
+        document.getElementById('budget-item-modal-backdrop').classList.add('hidden');
+      };
+
+      window.toggleModalTypeFields = function(isUnit) {
+        if (isUnit) {
+          document.getElementById('modal-est-unit-priced-fields').classList.remove('hidden');
+          document.getElementById('modal-est-global-fields').classList.add('hidden');
+          document.getElementById('modal-act-unit-priced-fields').classList.remove('hidden');
+          document.getElementById('modal-act-global-fields').classList.add('hidden');
+        } else {
+          document.getElementById('modal-est-unit-priced-fields').classList.add('hidden');
+          document.getElementById('modal-est-global-fields').classList.remove('hidden');
+          document.getElementById('modal-act-unit-priced-fields').classList.add('hidden');
+          document.getElementById('modal-act-global-fields').classList.remove('hidden');
+        }
+        calcModalLiveTotal();
+      };
+
+      window.calcModalLiveTotal = function() {
+        const isUnit = document.getElementById('modal-type-unit').checked;
+        
+        let estTotal = 0;
+        let actTotal = null;
+
+        if (isUnit) {
+          const estPrice = Number(document.getElementById('modal-item-est-price').value) || 0;
+          const estQty = Number(document.getElementById('modal-item-est-qty').value) || 0;
+          estTotal = estPrice * estQty;
+
+          const actPriceInput = document.getElementById('modal-item-act-price').value;
+          const actQtyInput = document.getElementById('modal-item-act-qty').value;
+          
+          if (actPriceInput !== '' || actQtyInput !== '') {
+            const actPrice = Number(actPriceInput) || 0;
+            const actQty = actQtyInput !== '' ? Number(actQtyInput) : estQty;
+            actTotal = actPrice * actQty;
+          }
+        } else {
+          estTotal = Number(document.getElementById('modal-item-est-total').value) || 0;
+          
+          const actTotalInput = document.getElementById('modal-item-act-total').value;
+          if (actTotalInput !== '') {
+            actTotal = Number(actTotalInput);
+          }
+        }
+
+        document.getElementById('modal-live-est-total').innerText = `₪${estTotal.toLocaleString()}`;
+        const actLabel = document.getElementById('modal-live-act-total');
+        if (actTotal !== null) {
+          actLabel.innerText = `₪${actTotal.toLocaleString()}`;
+          document.getElementById('modal-btn-clear-actual').classList.remove('hidden');
+        } else {
+          actLabel.innerText = '--';
+          document.getElementById('modal-btn-clear-actual').classList.add('hidden');
+        }
+      };
+
+      window.copyEstToActInModal = function() {
+        const isUnit = document.getElementById('modal-type-unit').checked;
+        if (isUnit) {
+          document.getElementById('modal-item-act-price').value = document.getElementById('modal-item-est-price').value;
+          document.getElementById('modal-item-act-qty').value = document.getElementById('modal-item-est-qty').value;
+        } else {
+          document.getElementById('modal-item-act-total').value = document.getElementById('modal-item-est-total').value;
+        }
+        calcModalLiveTotal();
+      };
+
+      window.clearActualInModal = function() {
+        const isUnit = document.getElementById('modal-type-unit').checked;
+        if (isUnit) {
+          document.getElementById('modal-item-act-price').value = '';
+          document.getElementById('modal-item-act-qty').value = '';
+        } else {
+          document.getElementById('modal-item-act-total').value = '';
+        }
+        calcModalLiveTotal();
+      };
+
+      window.updateModalReceiptUI = function() {
+        const container = document.getElementById('modal-receipt-preview-container');
+        const img = document.getElementById('modal-receipt-img');
+        const indicator = document.getElementById('modal-receipt-indicator');
+        const statusText = document.getElementById('modal-receipt-status');
+
+        if (modalReceiptBase64) {
+          img.src = modalReceiptBase64;
+          container.classList.remove('hidden');
+          indicator.className = "h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse";
+          statusText.innerText = "הועלתה קבלה מנוהלת ומכווצת בהצלחה";
+        } else {
+          img.src = "";
+          container.classList.add('hidden');
+          indicator.className = "h-2.5 w-2.5 rounded-full bg-slate-300";
+          statusText.innerText = "אין קבלה משויכת";
+        }
+      };
+
+      window.removeModalReceipt = function() {
+        modalReceiptBase64 = null;
+        updateModalReceiptUI();
+      };
+
+      window.triggerCameraFromModal = function() {
+        let itemId = document.getElementById('modal-item-id').value;
+        if (!itemId) {
+          itemId = 'temp-modal-item-' + crypto.randomUUID();
+          document.getElementById('modal-item-id').value = itemId;
+        }
+
+        const originalStop = window.stopCamera;
+        const originalUpdateReceipt = window.updateItemReceipt;
+
+        window.updateItemReceipt = async function(tgtId, base64) {
+          if (tgtId === itemId) {
+            modalReceiptBase64 = base64;
+            updateModalReceiptUI();
+          }
+        };
+
+        window.stopCamera = function() {
+          originalStop();
+          window.stopCamera = originalStop;
+          window.updateItemReceipt = originalUpdateReceipt;
+        };
+
+        window.startCamera(itemId);
+      };
+
+      window.handleModalFileUpload = async function(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+          showNotification('קורא ומכווץ קובץ קבלה במודאל...', 'indigo');
+          const compressed = await processAndCompressFile(file);
+          modalReceiptBase64 = compressed.base64;
+          updateModalReceiptUI();
+          showNotification(`הקובץ כווץ בהצלחה ל-${Math.round(compressed.sizeKB)}KB!`, 'emerald');
+        } catch (err) {
+          alert(`שגיאה בדחיסת התמונה: ${err.message}`);
+        }
+      };
+
+      window.deleteItemFromModal = async function() {
+        const itemId = document.getElementById('modal-item-id').value;
+        const name = document.getElementById('modal-item-name').value;
+        
+        if (!itemId) return;
+        
+        closeBudgetItemModal();
+        await window.deleteBudgetItem(itemId, name);
+      };
+
+      window.saveBudgetItemModal = async function(event) {
+        event.preventDefault();
+
+        const itemId = document.getElementById('modal-item-id').value;
+        const activityId = document.getElementById('modal-item-activity-id').value;
+        const nameVal = document.getElementById('modal-item-name').value.trim();
+        const isUnit = document.getElementById('modal-type-unit').checked;
+
+        if (!nameVal || !activityId) return;
+
+        let estTotalPrice = 0;
+        let estPriceUnit = 0;
+        let estQty = 0;
+
+        let actTotalPrice = null;
+        let actPriceUnit = null;
+        let actQty = null;
+
+        if (isUnit) {
+          estPriceUnit = Number(document.getElementById('modal-item-est-price').value) || 0;
+          estQty = Number(document.getElementById('modal-item-est-qty').value) || 0;
+          estTotalPrice = estPriceUnit * estQty;
+
+          const actPriceInput = document.getElementById('modal-item-act-price').value;
+          const actQtyInput = document.getElementById('modal-item-act-qty').value;
+
+          if (actPriceInput !== '' || actQtyInput !== '') {
+            actPriceUnit = Number(actPriceInput);
+            actQty = actQtyInput !== '' ? Number(actQtyInput) : estQty;
+            actTotalPrice = actPriceUnit * actQty;
+          }
+        } else {
+          estTotalPrice = Number(document.getElementById('modal-item-est-total').value) || 0;
+          
+          const actTotalInput = document.getElementById('modal-item-act-total').value;
+          if (actTotalInput !== '') {
+            actTotalPrice = Number(actTotalInput);
+          }
+        }
+
+        const isNewItem = !itemId || itemId.startsWith('temp-modal-item-');
+        const finalId = isNewItem ? crypto.randomUUID() : itemId;
+
+        const updatedItem = {
+          id: finalId,
+          activity_id: activityId,
+          name: nameVal,
+          is_unit_priced: isUnit,
+          est_price_per_unit: isUnit ? estPriceUnit : 0,
+          est_qty: isUnit ? estQty : 0,
+          est_total_price: estTotalPrice,
+          act_price_per_unit: actPriceUnit,
+          act_qty: actQty,
+          act_total_price: actTotalPrice,
+          receipt_url_or_base64: modalReceiptBase64,
+          created_at: new Date().toISOString()
+        };
+
+        if (isNewItem) {
+          budgetItems.push(updatedItem);
+        } else {
+          budgetItems = budgetItems.map(item => item.id === itemId ? updatedItem : item);
+        }
+
+        saveDataToStorage();
+        closeBudgetItemModal();
+        renderAll();
+
+        // Sync database
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            let result;
+            if (isNewItem) {
+              result = await client.from('budget_items').insert(updatedItem);
+            } else {
+              result = await client.from('budget_items').update(updatedItem).eq('id', finalId);
+            }
+            if (result.error) throw result.error;
+            showNotification(`המרכיב "${updatedItem.name}" נשמר וסונכרן לענן בהצלחה!`, 'emerald');
+          } catch (err) {
+            console.error('Supabase item sync error:', err);
+            showNotification(`שמירה מקומית הצליחה, אך ענן החזיר שגיאה: ${err.message}`, 'amber');
+          }
+        }
+      };
+
+      window.selectActivity = function(actId) {
+        selectedActivityId = actId;
+        saveDataToStorage();
+        renderAll();
+      };
+
+      window.toggleSettingsPanel = function(show) {
+        if (show !== undefined) {
+          showConfig = show;
+        } else {
+          showConfig = !showConfig;
+        }
+        const panel = document.getElementById('panel-settings');
+        if (showConfig) {
+          panel.classList.remove('hidden');
+        } else {
+          panel.classList.add('hidden');
+        }
+      };
+
+      window.toggleAddActivityForm = function(show) {
+        if (show !== undefined) {
+          showAddActivity = show;
+        } else {
+          showAddActivity = !showAddActivity;
+        }
+        const container = document.getElementById('form-add-activity-container');
+        if (showAddActivity) {
+          container.classList.remove('hidden');
+        } else {
+          container.classList.add('hidden');
+        }
+      };
+
+      window.createNewActivity = async function(event) {
+        event.preventDefault();
+        const nameInput = document.getElementById('input-activity-name');
+        const descInput = document.getElementById('input-activity-desc');
+        const priceInput = document.getElementById('input-activity-est-price');
+        const qtyInput = document.getElementById('input-activity-est-qty');
+
+        if (!nameInput.value.trim()) return;
+
+        const newAct = {
+          id: crypto.randomUUID(),
+          name: nameInput.value.trim(),
+          description: descInput.value.trim(),
+          parent_payment_est_price: Number(priceInput.value) || 0,
+          parent_payment_est_qty: Number(qtyInput.value) || 0,
+          parent_payment_act_price: null,
+          parent_payment_act_qty: null,
+          created_at: new Date().toISOString()
+        };
+
+        activities.unshift(newAct);
+        selectedActivityId = newAct.id;
+        saveDataToStorage();
+
+        // איפוס שדות
+        nameInput.value = '';
+        descInput.value = '';
+        priceInput.value = '';
+        qtyInput.value = '';
+        toggleAddActivityForm(false);
+
+        renderAll();
+
+        // סנכרון ישיר לשרת
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client.from('activities').insert(newAct);
+            if (error) throw error;
+            showNotification(`פעילות "${newAct.name}" נשמרה בהצלחה בענן!`, 'emerald');
+          } catch (err) {
+            console.error(err);
+            showNotification(`שגיאה בשמירה בענן: ${err.message}. הנתונים נשמרו ויסונכרנו בהמשך.`, 'amber');
+          }
+        }
+      };
+
+      window.deleteActivity = async function(event, id, name) {
+        event.stopPropagation();
+        if (!confirm(`האם אתה בטוח שברצונך למחוק את הפעילות "${name}" ואת כל מרכיבי התקציב שלה לצמיתות?`)) return;
+
+        activities = activities.filter(a => a.id !== id);
+        budgetItems = budgetItems.filter(item => item.activity_id !== id);
+
+        if (selectedActivityId === id) {
+          selectedActivityId = activities.length > 0 ? activities[0].id : '';
+        }
+
+        saveDataToStorage();
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client.from('activities').delete().eq('id', id);
+            if (error) throw error;
+            showNotification(`הפעילות "${name}" נמחקה לצמיתות מ-Supabase.`, 'emerald');
+          } catch (err) {
+            console.error(err);
+            showNotification(`שגיאה במחיקת פעילות מהענן: ${err.message}`, 'red');
+          }
+        }
+      };
+
+      // ניהול עריכת הורים ששילמו
+      window.startEditParents = function(actId, actPrice, actQty, estPrice, estQty) {
+        editingParentActualsId = actId;
+        renderActivitiesList();
+        
+        const priceInput = document.getElementById(`input-parents-act-price-${actId}`);
+        const qtyInput = document.getElementById(`input-parents-act-qty-${actId}`);
+        if (priceInput && qtyInput) {
+          priceInput.value = actPrice !== null ? actPrice : estPrice;
+          qtyInput.value = actQty !== null ? actQty : estQty;
+        }
+      };
+
+      window.cancelEditParents = function(event) {
+        event.stopPropagation();
+        editingParentActualsId = null;
+        renderActivitiesList();
+      };
+
+      window.saveParentActuals = async function(event, actId) {
+        event.stopPropagation();
+        const priceInput = document.getElementById(`input-parents-act-price-${actId}`);
+        const qtyInput = document.getElementById(`input-parents-act-qty-${actId}`);
+        
+        const valPrice = priceInput.value === '' ? null : Number(priceInput.value);
+        const valQty = qtyInput.value === '' ? null : Number(qtyInput.value);
+
+        activities = activities.map(act => {
+          if (act.id === actId) {
+            return {
+              ...act,
+              parent_payment_act_price: valPrice,
+              parent_payment_act_qty: valQty
+            };
+          }
+          return act;
+        });
+
+        editingParentActualsId = null;
+        saveDataToStorage();
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client
+              .from('activities')
+              .update({
+                parent_payment_act_price: valPrice,
+                parent_payment_act_qty: valQty
+              })
+              .eq('id', actId);
+            
+            if (error) throw error;
+            showNotification('תקציב הורים בפועל עודכן בשרת בהצלחה.', 'emerald');
+          } catch (err) {
+            console.error(err);
+            showNotification(`שגיאת עדכון שרת: ${err.message}`, 'red');
+          }
+        }
+      };
+
+      window.quickCopyParentEstToAct = async function(actId) {
+        const act = activities.find(a => a.id === actId);
+        if (!act) return;
+
+        activities = activities.map(a => {
+          if (a.id === actId) {
+            return {
+              ...a,
+              parent_payment_act_price: a.parent_payment_est_price,
+              parent_payment_act_qty: a.parent_payment_est_qty
+            };
+          }
+          return a;
+        });
+
+        saveDataToStorage();
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client
+              .from('activities')
+              .update({
+                parent_payment_act_price: act.parent_payment_est_price,
+                parent_payment_act_qty: act.parent_payment_est_qty
+              })
+              .eq('id', actId);
+            
+            if (error) throw error;
+            showNotification('שולב תקציב הורים משוער לתוך בפועל בשרת.', 'emerald');
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      };
+
+
+      // הוספת מרכיב תקציבי
+      window.calculateLiveTotalPreview = function() {
+        const previewEl = document.getElementById('live-total-preview');
+        if (!previewEl) return;
+
+        if (currentItemIsUnit) {
+          const price = Number(document.getElementById('input-item-price-unit')?.value) || 0;
+          const qty = Number(document.getElementById('input-item-qty')?.value) || 0;
+          previewEl.innerText = `₪${(price * qty).toLocaleString()}`;
+        } else {
+          const total = Number(document.getElementById('input-item-total')?.value) || 0;
+          previewEl.innerText = `₪${total.toLocaleString()}`;
+        }
+      };
+
+      window.createNewBudgetItem = async function(event) {
+        event.preventDefault();
+        const nameInput = document.getElementById('input-item-name');
+        if (!nameInput.value.trim() || !selectedActivityId) return;
+
+        let estTotalPrice = 0;
+        let estPriceUnit = 0;
+        let estQty = 0;
+
+        if (currentItemIsUnit) {
+          estPriceUnit = Number(document.getElementById('input-item-price-unit').value) || 0;
+          estQty = Number(document.getElementById('input-item-qty').value) || 0;
+          estTotalPrice = estPriceUnit * estQty;
+        } else {
+          estTotalPrice = Number(document.getElementById('input-item-total').value) || 0;
+        }
+
+        const newItem = {
+          id: crypto.randomUUID(),
+          activity_id: selectedActivityId,
+          name: nameInput.value.trim(),
+          is_unit_priced: currentItemIsUnit,
+          est_price_per_unit: currentItemIsUnit ? estPriceUnit : 0,
+          est_qty: currentItemIsUnit ? estQty : 0,
+          est_total_price: estTotalPrice,
+          act_price_per_unit: null,
+          act_qty: null,
+          act_total_price: null,
+          receipt_url_or_base64: null,
+          created_at: new Date().toISOString()
+        };
+
+        budgetItems.push(newItem);
+        saveDataToStorage();
+
+        // ניקוי
+        currentItemIsUnit = false;
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client.from('budget_items').insert(newItem);
+            if (error) throw error;
+            showNotification(`המרכיב "${newItem.name}" נוסף בהצלחה לענן!`, 'emerald');
+          } catch (err) {
+            console.error(err);
+            showNotification(`שגיאה בהעלאה לענן: ${err.message}`, 'red');
+          }
+        }
+      };
+
+      window.deleteBudgetItem = async function(itemId, name) {
+        if (!confirm(`האם אתה בטוח שברצונך למחוק את פריט התקציב "${name}"?`)) return;
+
+        budgetItems = budgetItems.filter(item => item.id !== itemId);
+        saveDataToStorage();
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client.from('budget_items').delete().eq('id', itemId);
+            if (error) throw error;
+            showNotification('פריט התקציב נמחק בהצלחה מהשרת.', 'emerald');
+          } catch (err) {
+            console.error(err);
+            showNotification(`שגיאת מחיקה מהענן: ${err.message}`, 'red');
+          }
+        }
+      };
+
+      // עדכון דינמי של תקציב בפועל לפריט הוצאה
+      window.updateItemActualPrice = async function(itemId, isUnit) {
+        let valPrice = null;
+        let valQty = null;
+        let valTotal = null;
+
+        const item = budgetItems.find(i => i.id === itemId);
+        if (!item) return;
+
+        if (isUnit) {
+          const priceInput = document.getElementById(`input-item-act-price-${itemId}`);
+          const qtyInput = document.getElementById(`input-item-act-qty-${itemId}`);
+          
+          valPrice = priceInput.value === '' ? null : Number(priceInput.value);
+          valQty = qtyInput.value === '' ? null : Number(qtyInput.value);
+          
+          const finalQty = valQty !== null ? valQty : item.est_qty;
+          valTotal = valPrice !== null ? (valPrice * finalQty) : null;
+        } else {
+          const totalInput = document.getElementById(`input-item-act-total-${itemId}`);
+          valTotal = totalInput.value === '' ? null : Number(totalInput.value);
+        }
+
+        budgetItems = budgetItems.map(i => {
+          if (i.id === itemId) {
+            return {
+              ...i,
+              act_price_per_unit: valPrice,
+              act_qty: valQty,
+              act_total_price: valTotal
+            };
+          }
+          return i;
+        });
+
+        saveDataToStorage();
+        
+        // רנדור קוסמטי שקט של הסטטיסטיקות ושל המרכיבים ללא אבדן פוקוס קשה
+        renderStats();
+        
+        // עדכון ישיר בסופאבייס בחיבור פעיל
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client
+              .from('budget_items')
+              .update({
+                act_price_per_unit: valPrice,
+                act_qty: valQty,
+                act_total_price: valTotal
+              })
+              .eq('id', itemId);
+            
+            if (error) throw error;
+          } catch (err) {
+            console.error('Supabase update price error:', err);
+          }
+        }
+      };
+
+      window.copyItemEstToAct = async function(itemId) {
+        const item = budgetItems.find(i => i.id === itemId);
+        if (!item) return;
+
+        budgetItems = budgetItems.map(i => {
+          if (i.id === itemId) {
+            return {
+              ...i,
+              act_price_per_unit: i.is_unit_priced ? i.est_price_per_unit : null,
+              act_qty: i.is_unit_priced ? i.est_qty : null,
+              act_total_price: i.est_total_price
+            };
+          }
+          return i;
+        });
+
+        saveDataToStorage();
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client
+              .from('budget_items')
+              .update({
+                act_price_per_unit: item.is_unit_priced ? item.est_price_per_unit : null,
+                act_qty: item.is_unit_priced ? item.est_qty : null,
+                act_total_price: item.est_total_price
+              })
+              .eq('id', itemId);
+            if (error) throw error;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      };
+
+      window.clearItemActualPrice = async function(itemId) {
+        budgetItems = budgetItems.map(i => {
+          if (i.id === itemId) {
+            return {
+              ...i,
+              act_price_per_unit: null,
+              act_qty: null,
+              act_total_price: null
+            };
+          }
+          return i;
+        });
+
+        saveDataToStorage();
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client
+              .from('budget_items')
+              .update({
+                act_price_per_unit: null,
+                act_qty: null,
+                act_total_price: null
+              })
+              .eq('id', itemId);
+            if (error) throw error;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      };
+
+
+      // ==========================================
+      // העלאת קבלה ועריכת קובץ מצלמה (Receipt Services)
+      // ==========================================
+      window.handleFileUploadFromClient = async function(event, itemId) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+          showNotification('קורא ומכווץ תמונה מקומית בדפדפן...', 'indigo');
+          const compressed = await processAndCompressFile(file);
+          await updateItemReceipt(itemId, compressed.base64);
+          showNotification(`הקובץ נשמר בהצלחה בגודל מקומי דחוס של ${Math.round(compressed.sizeKB)}KB!`, 'emerald');
+        } catch (err) {
+          alert(`שגיאה בדחיסת התמונה: ${err.message}`);
+        }
+      };
+
+      async function updateItemReceipt(itemId, base64Image) {
+        budgetItems = budgetItems.map(item => {
+          if (item.id === itemId) {
+            return { ...item, receipt_url_or_base64: base64Image };
+          }
+          return item;
+        });
+
+        saveDataToStorage();
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client
+              .from('budget_items')
+              .update({ receipt_url_or_base64: base64Image })
+              .eq('id', itemId);
+            
+            if (error) throw error;
+            showNotification('עותק הקבלה גובה ומסונכרן לענן בהצלחה.', 'emerald');
+          } catch (err) {
+            console.error(err);
+            showNotification(`שגיאה בגיבוי הקבלה לענן: ${err.message}`, 'red');
+          }
+        }
+      }
+
+      window.removeItemReceipt = function(itemId) {
+        if (!confirm('האם אתה בטוח שברצונך להסיר את הקבלה השמורה עבור סעיף זה?')) return;
+        updateItemReceipt(itemId, null);
+      };
+
+      window.openReceiptInRawWindow = function(base64) {
+        const w = window.open();
+        if (w) {
+          w.document.write(`<img src="${base64}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+        } else {
+          alert('נא לאפשר פתיחת חלונות קופצים בדפדפן לצפייה בקבלה בגודל מלא.');
+        }
+      };
+
+
+      // ==========================================
+      // אלגוריתם הדחיסה החכמה בדפדפן (Browser Canvas Compressor)
+      // ==========================================
+      function processAndCompressFile(file) {
+        return new Promise((resolve, reject) => {
+          isCompressing = true;
+          updateCameraProgressBar(true, 'מפענח את קובץ הקבלה...');
+          
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+              let maxDimension = 1200; // רזולוציה מקסימלית התחלתית
+              let quality = 0.8;      // איכות JPEG התחלתית
+              
+              const tryCompress = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // שינוי גודל פרופורציונלי
+                if (width > maxDimension || height > maxDimension) {
+                  if (width > height) {
+                    height = Math.round((height * maxDimension) / width);
+                    width = maxDimension;
+                  } else {
+                    width = Math.round((width * maxDimension) / height);
+                    height = maxDimension;
+                  }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                if (!ctx) throw new Error('שגיאה ביצירת משטח הציור הדיגיטלי');
+                
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const base64 = canvas.toDataURL('image/jpeg', quality);
+                const base64Clean = base64.substring(base64.indexOf(',') + 1);
+                const sizeInBytes = Math.round(base64Clean.length * 0.75);
+                const sizeKB = sizeInBytes / 1024;
+                
+                return { base64, sizeKB };
+              };
+
+              try {
+                let attempt = tryCompress();
+                let steps = 0;
+                
+                // לולאה מתוחכמת המבטיחה גודל של פחות מ-200KB לדרישות השרת
+                while (attempt.sizeKB > 195 && steps < 6) {
+                  steps++;
+                  maxDimension = Math.round(maxDimension * 0.8);
+                  quality = Math.max(0.25, quality - 0.12);
+                  updateCameraProgressBar(true, `מבצע דחיסה מתקדמת... שלב ${steps} (${Math.round(attempt.sizeKB)}KB)`);
+                  attempt = tryCompress();
+                }
+                
+                isCompressing = false;
+                updateCameraProgressBar(false);
+                resolve(attempt);
+              } catch (e) {
+                isCompressing = false;
+                updateCameraProgressBar(false);
+                reject(e);
+              }
+            };
+            img.onerror = () => {
+              isCompressing = false;
+              updateCameraProgressBar(false);
+              reject(new Error('טעינת התמונה נכשלה.'));
+            };
+          };
+          reader.onerror = () => {
+            isCompressing = false;
+            updateCameraProgressBar(false);
+            reject(new Error('קריאת קובץ נכשלה.'));
+          };
+        });
+      }
+
+
+      // ==========================================
+      // הפעלת מצלמה חיה (Live Video Capture Engine)
+      // ==========================================
+      window.startCamera = async function(itemId) {
+        cameraTargetItemId = itemId;
+        isCameraActive = true;
+        
+        const backdrop = document.getElementById('camera-modal-backdrop');
+        backdrop.classList.remove('hidden');
+        updateCameraProgressBar(true, 'מבקש הרשאת מצלמה...');
+
+        try {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('דפדפן זה אינו תומך בגישה ישירה למצלמה דרך פרוטוקול זה. השתמש באפשרות העלאת קבצים.');
+          }
+
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
+            audio: false 
+          });
+          
+          localStream = stream;
+          const video = document.getElementById('camera-video');
+          video.srcObject = stream;
+          video.play();
+          
+          updateCameraProgressBar(false);
+        } catch (err) {
+          console.error('Camera access error:', err);
+          alert(err.message || 'לא ניתן לגשת למצלמה. אנא ודא הרשאות מצלמה או לחלופין השתמש בהעלאת קובץ רגיל.');
+          stopCamera();
+        }
+      };
+
+      window.stopCamera = function() {
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop());
+          localStream = null;
+        }
+        isCameraActive = false;
+        cameraTargetItemId = null;
+        
+        const backdrop = document.getElementById('camera-modal-backdrop');
+        backdrop.classList.add('hidden');
+        
+        const video = document.getElementById('camera-video');
+        if (video) video.srcObject = null;
+      };
+
+      window.captureSnapshotAndCompress = async function() {
+        const video = document.getElementById('camera-video');
+        if (!video || !cameraTargetItemId) return;
+
+        try {
+          updateCameraProgressBar(true, 'מצלם פריים נוכחי...');
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+          if (!blob) throw new Error('צילום התמונה נכשל');
+
+          const file = new File([blob], "captured_receipt.jpg", { type: "image/jpeg" });
+          
+          updateCameraProgressBar(true, 'מפעיל אלגוריתם דחיסה בדפדפן...');
+          const compressed = await processAndCompressFile(file);
+          
+          await updateItemReceipt(cameraTargetItemId, compressed.base64);
+          stopCamera();
+          showNotification(`קבלה צולמה והתכווצה ל-${Math.round(compressed.sizeKB)}KB בהצלחה!`, 'emerald');
+        } catch (e) {
+          alert(`שגיאה בצילום: ${e.message}`);
+          updateCameraProgressBar(false);
+        }
+      };
+
+
+      // ==========================================
+      // התראות ועדכוני סטטוס קלים (Notification UI Components)
+      // ==========================================
+      function showNotification(message, type = 'indigo') {
+        const container = document.getElementById('db-notification-container');
+        const textEl = document.getElementById('db-notification-message');
+        
+        textEl.innerText = message;
+        container.classList.remove('hidden');
+
+        // שינוי צעצוע עיצובי
+        const innerAlert = container.firstElementChild;
+        innerAlert.className = "flex items-center justify-between rounded-2xl px-4 py-3 text-sm shadow-sm border transition-all";
+        
+        if (type === 'emerald') {
+          innerAlert.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
+        } else if (type === 'red') {
+          innerAlert.classList.add('bg-rose-50', 'text-rose-950', 'border-rose-200');
+        } else if (type === 'amber') {
+          innerAlert.classList.add('bg-amber-50', 'text-amber-900', 'border-amber-200');
+        } else {
+          innerAlert.classList.add('bg-indigo-50/55', 'text-indigo-950', 'border-indigo-100');
+        }
+
+        // שליחת אוטומטית להסתרה לאחר 12 שניות
+        setTimeout(() => {
+          if (textEl.innerText === message) {
+            hideNotification();
+          }
+        }, 12000);
+      }
+
+      window.hideNotification = function() {
+        document.getElementById('db-notification-container').classList.add('hidden');
+      };
+
+      function updateDbStatusBadge() {
+        const badge = document.getElementById('db-status-badge');
+        const text = document.getElementById('db-status-text');
+        const indicator = document.getElementById('db-status-indicator');
+
+        if (!badge) return;
+
+        badge.className = "flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border transition-all";
+        
+        if (dbStatus === 'connected') {
+          badge.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-200');
+          text.innerText = 'מחובר ומסונכרן ל-Supabase';
+          indicator.className = "h-2 w-2 rounded-full bg-emerald-500 animate-pulse";
+        } else if (dbStatus === 'error') {
+          badge.classList.add('bg-rose-50', 'text-rose-800', 'border-rose-205');
+          text.innerText = 'שגיאת חיבור לענן (מצב מקומי)';
+          indicator.className = "h-2 w-2 rounded-full bg-rose-500";
+        } else {
+          badge.classList.add('bg-amber-50', 'text-amber-805', 'border-amber-200');
+          text.innerText = 'מצב מקומי (שמור בדפדפן)';
+          indicator.className = "h-2 w-2 rounded-full bg-amber-500 animate-pulse";
+        }
+      }
+
+      function updateCameraProgressBar(show, statusText = '') {
+        const bar = document.getElementById('camera-compression-status-bar');
+        const text = document.getElementById('camera-status-text');
+        
+        if (show) {
+          bar.classList.remove('hidden');
+          if (statusText) text.innerText = statusText;
+        } else {
+          bar.classList.add('hidden');
+        }
+      }
+    </script>
+  </body>
+</html>
