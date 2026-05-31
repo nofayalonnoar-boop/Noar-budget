@@ -335,46 +335,146 @@
                 class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-505"
               ></textarea>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">תשלום משוער להורה (₪) *</label>
-                <input 
-                  type="number" 
-                  id="modal-activity-price" 
-                  min="0"
-                  required
-                  placeholder="0"
-                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
-                />
+            <!-- מימון הורים בסיסי - מתוכנן ובפועל -->
+            <div class="space-y-3.5 border border-slate-100 bg-slate-50/30 p-3.5 rounded-xl">
+              <span class="block text-[11px] font-extrabold text-indigo-950">מימון משתתפים/הורים (בסיס):</span>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 mb-1">תשלום להורה מתוכנן (₪) *</label>
+                  <input 
+                    type="number" 
+                    id="modal-activity-price" 
+                    min="0"
+                    required
+                    placeholder="0"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 mb-1">כמות משתתפים מתוכננת *</label>
+                  <input 
+                    type="number" 
+                    id="modal-activity-qty" 
+                    min="0"
+                    required
+                    placeholder="0"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
               </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">כמות משתתפים משוערת *</label>
-                <input 
-                  type="number" 
-                  id="modal-activity-qty" 
-                  min="0"
-                  required
-                  placeholder="0"
-                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
-                />
+
+              <!-- בפועל -->
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label class="block text-[10px] font-bold text-emerald-800 mb-1">תשלום להורה בפועל (₪)</label>
+                  <input 
+                    type="number" 
+                    id="modal-activity-act-price" 
+                    min="0"
+                    placeholder="לא הוגדר"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-emerald-800 mb-1">כמות משתתפים בפועל</label>
+                  <input 
+                    type="number" 
+                    id="modal-activity-act-qty" 
+                    min="0"
+                    placeholder="לא הוגדר"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
               </div>
             </div>
 
-            <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <!-- מרכיב מימון הורים שני/נוסף (אופציונלי) -->
+            <div class="border border-slate-100 p-3.5 rounded-xl space-y-2">
+              <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700">
+                <input 
+                  type="checkbox" 
+                  id="modal-activity-has-extra" 
+                  onchange="toggleExtraPaymentFields(this.checked)" 
+                  class="rounded text-indigo-600 focus:ring-indigo-500" 
+                />
+                <span>הוסף מרכיב מימון הורים נוסף (לשני תעריפים)</span>
+              </label>
+              
+              <div id="extra-payment-fields-wrapper" class="hidden space-y-3 bg-slate-50/50 p-2.5 rounded-lg border border-slate-150 pt-3">
+                <span class="block text-[10px] font-extrabold text-indigo-950">מימון נוסף (רכיב שני):</span>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[10px] text-slate-500 mb-1">תשלום נוסף מתוכנן (₪)</label>
+                    <input 
+                      type="number" 
+                      id="modal-activity-extra-price" 
+                      min="0" 
+                      placeholder="0" 
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-slate-500 mb-1">כמות נוספת מתוכננת</label>
+                    <input 
+                      type="number" 
+                      id="modal-activity-extra-qty" 
+                      min="0" 
+                      placeholder="0" 
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none" 
+                    />
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[10px] text-emerald-800 mb-1">תשלום נוסף בפועל (₪)</label>
+                    <input 
+                      type="number" 
+                      id="modal-activity-extra-act-price" 
+                      min="0" 
+                      placeholder="לא הוגדר" 
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-emerald-800 mb-1">כמות נוספת בפועל</label>
+                    <input 
+                      type="number" 
+                      id="modal-activity-extra-act-qty" 
+                      min="0" 
+                      placeholder="לא הוגדר" 
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none" 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
               <button 
                 type="button" 
-                onclick="closeAddActivityModal()" 
-                class="rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 px-4 py-2 transition"
+                id="modal-activity-delete-btn"
+                onclick="handleModalDeleteActivity()"
+                class="hidden rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 text-xs font-bold px-4 py-2 transition inline-flex items-center gap-1.5"
               >
-                ביטול
+                <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                <span>מחק פעילות</span>
               </button>
-              <button 
-                type="submit" 
-                id="modal-activity-submit-btn"
-                class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white px-5 py-2 shadow-xs transition"
-              >
-                צור פעילות
-              </button>
+              <div class="flex gap-2 mr-auto">
+                <button 
+                  type="button" 
+                  onclick="closeAddActivityModal()" 
+                  class="rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 px-4 py-2 transition"
+                >
+                  ביטול
+                </button>
+                <button 
+                  type="submit" 
+                  id="modal-activity-submit-btn"
+                  class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white px-5 py-2 shadow-xs transition"
+                >
+                  צור פעילות
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -911,7 +1011,8 @@
         const act = activities.find(a => a.id === activityId);
         if (!act) return false;
         
-        const parentReported = act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null;
+        const parentReported = (act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null) ||
+                               (act.extra_payment_act_price !== null && act.extra_payment_act_qty !== null && act.extra_payment_act_price !== undefined && act.extra_payment_act_qty !== undefined);
         const items = budgetItems.filter(item => item.activity_id === activityId);
         const itemReported = items.some(item => item.act_total_price !== null);
         
@@ -924,10 +1025,20 @@
         const totalEstCost = items.reduce((sum, item) => sum + item.est_total_price, 0);
         const totalActCost = items.reduce((sum, item) => sum + (item.act_total_price !== null ? item.act_total_price : 0), 0);
         
-        const estParentFunding = act.parent_payment_est_price * act.parent_payment_est_qty;
-        const actParentFunding = (act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null)
+        // Base parent funding
+        const estBaseParent = (act.parent_payment_est_price || 0) * (act.parent_payment_est_qty || 0);
+        const actBaseParent = (act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null)
           ? (act.parent_payment_act_price * act.parent_payment_act_qty)
           : 0;
+          
+        // Extra parent funding
+        const estExtraParent = (act.extra_payment_est_price || 0) * (act.extra_payment_est_qty || 0);
+        const actExtraParent = (act.extra_payment_act_price !== null && act.extra_payment_act_qty !== null && act.extra_payment_act_price !== undefined && act.extra_payment_act_qty !== undefined)
+          ? (act.extra_payment_act_price * act.extra_payment_act_qty)
+          : 0;
+
+        const estParentFunding = estBaseParent + estExtraParent;
+        const actParentFunding = actBaseParent + actExtraParent;
           
         const estCommitteeFunding = Math.max(0, totalEstCost - estParentFunding);
         const actCommitteeFunding = activityHasActualReport(act.id)
@@ -1050,11 +1161,54 @@
           const actItems = budgetItems.filter(item => item.activity_id === act.id);
 
           // Header summary elements
-          const parentText = `מתוכנן: ₪${calcs.estParentFunding.toLocaleString()}` + 
-            (act.parent_payment_act_price !== null ? ` | בפועל: <span class="text-emerald-700 font-extrabold">₪${calcs.actParentFunding.toLocaleString()}</span>` : '');
+          const hasExtra = (act.extra_payment_est_price !== undefined && act.extra_payment_est_qty !== undefined && act.extra_payment_est_price > 0 && act.extra_payment_est_qty > 0);
+          
+          let parentText = '';
+          if (!hasExtra) {
+            parentText = `
+              <div class="text-slate-650 font-sans">מתוכנן: ₪${calcs.estParentFunding.toLocaleString()} (${act.parent_payment_est_qty} × ₪${act.parent_payment_est_price})</div>
+            `;
+            if (act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null) {
+              parentText += `
+                <div class="text-emerald-750 font-bold mt-0.5 font-sans">בפועל: ₪${calcs.actParentFunding.toLocaleString()} (${act.parent_payment_act_qty} × ₪${act.parent_payment_act_price})</div>
+              `;
+            }
+          } else {
+            // 2 lines + total
+            const estBase = (act.parent_payment_est_price || 0) * (act.parent_payment_est_qty || 0);
+            const estExtra = (act.extra_payment_est_price || 0) * (act.extra_payment_est_qty || 0);
+            
+            parentText = `
+              <div class="space-y-0.5 text-[10px] text-slate-500 font-sans leading-tight">
+                <div>בסיס מתוכנן: ₪${estBase.toLocaleString()} (${act.parent_payment_est_qty} × ₪${act.parent_payment_est_price})</div>
+                <div>נוסף מתוכנן: ₪${estExtra.toLocaleString()} (${act.extra_payment_est_qty} × ₪${act.extra_payment_est_price})</div>
+                <div class="font-extrabold text-indigo-700 border-t border-slate-100 mt-1 pt-0.5">סה"כ מתוכנן: ₪${calcs.estParentFunding.toLocaleString()}</div>
+              </div>
+            `;
+            
+            if ((act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null) || 
+                (act.extra_payment_act_price !== null && act.extra_payment_act_qty !== null && act.extra_payment_act_price !== undefined)) {
+              const actBase = (act.parent_payment_act_price || 0) * (act.parent_payment_act_qty || 0);
+              const actExtra = (act.extra_payment_act_price || 0) * (act.extra_payment_act_qty || 0);
+              
+              parentText += `
+                <div class="space-y-0.5 text-[10px] text-emerald-850 font-sans leading-tight border-t border-dashed border-slate-150 mt-1.5 pt-1.5">
+                  <div>בסיס בפועל: ₪${actBase.toLocaleString()} (${act.parent_payment_act_qty || 0} × ₪${act.parent_payment_act_price || 0})</div>
+                  <div>נוסף בפועל: ₪${actExtra.toLocaleString()} (${act.extra_payment_act_qty || 0} × ₪${act.extra_payment_act_price || 0})</div>
+                  <div class="font-extrabold text-emerald-700">סה"כ בפועל: ₪${calcs.actParentFunding.toLocaleString()}</div>
+                </div>
+              `;
+            }
+          }
 
-          const committeeText = `מתוכנן: ₪${calcs.estCommitteeFunding.toLocaleString()}` + 
-            (calcs.hasActualReport ? ` | בפועל: <span class="text-indigo-700 font-extrabold">₪${calcs.actCommitteeFunding.toLocaleString()}</span>` : '');
+          let committeeText = `
+            <div class="text-slate-650">מתוכנן: ₪${calcs.estCommitteeFunding.toLocaleString()}</div>
+          `;
+          if (calcs.hasActualReport) {
+            committeeText += `
+              <div class="text-indigo-700 font-extrabold mt-0.5">בפועל: ₪${calcs.actCommitteeFunding.toLocaleString()}</div>
+            `;
+          }
 
           html += `
             <div 
@@ -1067,16 +1221,24 @@
                 class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 cursor-pointer hover:bg-slate-50/20 transition select-none text-right"
               >
                 <div class="flex items-start gap-3">
-                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                  <span class="text-slate-400 hover:text-slate-600 transition p-1 pt-1.5">
                     <i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="h-5 w-5"></i>
                   </span>
                   <div>
-                    <h4 class="font-extrabold text-slate-900 text-sm md:text-base flex items-center gap-2">
+                    <h4 class="font-extrabold text-slate-900 text-sm md:text-base flex flex-wrap items-center gap-2">
                       <span>${act.name}</span>
+                      <span class="text-xs bg-slate-50 text-slate-700 border border-slate-200 rounded-lg px-2.5 py-0.5 font-bold">עלות מוערכת: ₪${calcs.totalEstCost.toLocaleString()}</span>
+                      <button 
+                        onclick="event.stopPropagation(); window.openEditActivityModal('${act.id}')"
+                        class="p-1 rounded-lg hover:bg-slate-100 flex items-center justify-center transition text-slate-400 hover:text-indigo-600 focus:outline-none"
+                        title="ערוך פעילות"
+                      >
+                        <i data-lucide="edit-2" class="h-3.5 w-3.5"></i>
+                      </button>
                       <span class="rounded-full px-2 py-0.5 text-[9px] font-black ${
                         calcs.hasActualReport 
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' 
-                          : 'bg-indigo-50 text-indigo-700 border border-indigo-250'
+                          : 'bg-indigo-55 text-indigo-700 border border-indigo-250'
                       }">
                         ${calcs.hasActualReport ? '✅ דווח בפועל' : '📝 בתכנון'}
                       </span>
@@ -1086,11 +1248,7 @@
                 </div>
 
                 <!-- Collapsed values -->
-                <div class="grid grid-cols-3 gap-4 md:gap-6 text-right md:border-r md:border-dashed md:border-slate-200 md:pr-6 md:mr-4">
-                  <div>
-                    <span class="block text-[9px] font-bold text-slate-400 uppercase">עלות מוערכת</span>
-                    <span class="font-extrabold text-slate-800 text-xs md:text-sm">₪${calcs.totalEstCost.toLocaleString()}</span>
-                  </div>
+                <div class="grid grid-cols-2 gap-4 md:gap-6 text-right md:border-r md:border-dashed md:border-slate-200 md:pr-6 md:mr-4">
                   <div>
                     <span class="block text-[9px] font-bold text-slate-400 uppercase">מימון הורים</span>
                     <span class="text-[11px] font-medium text-slate-700 block mt-0.5">${parentText}</span>
@@ -1104,132 +1262,7 @@
 
               <!-- Expanded area -->
               ${isExpanded ? `
-                <div class="border-t border-slate-100 bg-slate-50/20 p-4">
-                  
-                  <!-- 1. Parent Funding and Action buttons -->
-                  <div class="mb-5 p-4 rounded-xl border border-slate-150 bg-white shadow-2xs text-right">
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-slate-100">
-                      <div class="flex items-center gap-1.5 text-xs font-black text-slate-800">
-                        <i data-lucide="users" class="h-4 w-4 text-indigo-600"></i>
-                        <span>תקבולים ותשלומי הורים לפעילות</span>
-                      </div>
-                      <div class="flex items-center gap-1.5">
-                        <button
-                          onclick="event.stopPropagation(); window.openEditActivityModal('${act.id}')"
-                          class="inline-flex items-center gap-1 text-[10px] text-indigo-600 hover:text-indigo-800 font-extrabold px-2.5 py-1 rounded-lg border border-indigo-100 hover:bg-indigo-50 transition"
-                          title="ערוך פרטי פעילות ותקציב הורים מתוכנן"
-                        >
-                          <i data-lucide="edit-2" class="h-3 w-3"></i>
-                          <span>ערוך פעילות</span>
-                        </button>
-                        <button
-                          onclick="event.stopPropagation(); deleteActivity(event, '${act.id}', '${act.name}')"
-                          class="inline-flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-800 font-extrabold px-2.5 py-1 rounded-lg border border-rose-100 hover:bg-rose-50 transition"
-                          title="מחק את כל הפעילות"
-                        >
-                          <i data-lucide="trash-2" class="h-3 w-3"></i>
-                          <span>מחק פעילות</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <!-- מתוכנן גבייה -->
-                      <div>
-                        <span class="block text-[10px] text-slate-400 font-bold">תקציב הורים מתוכנן</span>
-                        <div class="text-xs text-slate-700 mt-1 font-medium">
-                          סה"כ מתוכנן: <span class="font-extrabold text-slate-900">₪${calcs.estParentFunding.toLocaleString()}</span>
-                          <span class="text-slate-400 mr-1">(${act.parent_payment_est_qty} משתתפים × ₪${act.parent_payment_est_price})</span>
-                        </div>
-                      </div>
-
-                      <!-- גבייה בפועל -->
-                      <div class="bg-emerald-50/20 rounded-lg p-2 border border-emerald-100/50">
-                        <span class="block text-[10px] text-emerald-800 font-bold">גבייה בפועל מהורים</span>
-                        <div class="text-xs text-slate-700 mt-1">
-                          ${act.parent_payment_act_price !== null && act.parent_payment_act_qty !== null ? `
-                            סה"כ נגבה: <span class="font-extrabold text-emerald-700">₪${calcs.actParentFunding.toLocaleString()}</span>
-                            <span class="text-slate-400 mr-1">(${act.parent_payment_act_qty} משתתפים × ₪${act.parent_payment_act_price})</span>
-                          ` : `
-                            <span class="text-slate-400 italic">טרם דווחו נתוני גבייה</span>
-                          `}
-                        </div>
-                        
-                        ${!isEditingParents ? `
-                          <div class="mt-2 flex gap-3 text-[10px] font-extrabold">
-                            <button
-                              onclick="startEditParents('${act.id}', ${act.parent_payment_act_price}, ${act.parent_payment_act_qty}, ${act.parent_payment_est_price}, ${act.parent_payment_est_qty})"
-                              class="text-indigo-600 hover:text-indigo-800 underline"
-                            >
-                              עדכן נתוני גבייה
-                            </button>
-                            ${act.parent_payment_act_price === null ? `
-                              <button
-                                onclick="quickCopyParentEstToAct('${act.id}')"
-                                class="text-emerald-700 hover:text-emerald-950 underline"
-                              >
-                                העתק מהאומדן
-                              </button>
-                            ` : ''}
-                          </div>
-                        ` : ''}
-                      </div>
-
-                      <!-- השלמת ועדת נוער -->
-                      <div>
-                        <span class="block text-[10px] text-slate-400 font-bold">מימון ועדת נוער (השלמה)</span>
-                        <div class="text-xs text-slate-700 mt-1 font-medium font-sans">
-                          צפי השלמה: <span class="font-extrabold text-slate-900">₪${calcs.estCommitteeFunding.toLocaleString()}</span>
-                          ${calcs.hasActualReport ? `
-                            <span class="block text-indigo-700 font-extrabold mt-0.5">סופי בפועל: ₪${calcs.actCommitteeFunding.toLocaleString()}</span>
-                          ` : ''}
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- עריכת תשלומי הורים בפועל בתיבה קופצת -->
-                    ${isEditingParents ? `
-                      <div class="mt-3 rounded-xl border border-indigo-100 bg-white p-3 shadow-inner" onclick="event.stopPropagation()">
-                        <h5 class="text-[10px] font-black text-indigo-950 mb-2">עריכת גבייה בפועל מהורים</h5>
-                        <div class="flex flex-wrap gap-3 items-end">
-                          <div>
-                            <label class="block text-[9px] text-slate-400 mb-1">תשלום הורה בפועל (₪)</label>
-                            <input 
-                              type="number" 
-                              id="input-parents-act-price-${act.id}"
-                              placeholder="מחיר הורה"
-                              class="w-24 rounded-lg border border-slate-205 px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label class="block text-[9px] text-slate-450 mb-1">משתתפים בפועל ששילמו</label>
-                            <input 
-                              type="number" 
-                              id="input-parents-act-qty-${act.id}"
-                              placeholder="כמות"
-                              class="w-24 rounded-lg border border-slate-205 px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none"
-                            />
-                          </div>
-                          <div class="flex gap-2 mr-auto pt-2 sm:pt-0">
-                            <button
-                              type="button"
-                              onclick="cancelEditParents(event)"
-                              class="rounded-lg bg-slate-100 hover:bg-slate-200 px-3 py-1.5 text-[10px] font-bold text-slate-700"
-                            >
-                              ביטול
-                            </button>
-                            <button
-                              type="button"
-                              onclick="saveParentActuals(event, '${act.id}')"
-                              class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 text-[10px] font-black text-white"
-                            >
-                              שמור גבייה
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ` : ''}
-                  </div>
+                <div class="border-t border-slate-100 bg-slate-50/20 p-4 space-y-4">
 
                   <!-- 2. Budget Items Dense List Table -->
                   <div class="bg-white rounded-xl border border-slate-150 p-3 shadow-2xs">
@@ -1349,6 +1382,26 @@
       // ==========================================
       // Modal controls for Adding / Editing Activity
       // ==========================================
+      window.toggleExtraPaymentFields = function(show) {
+        const wrapper = document.getElementById('extra-payment-fields-wrapper');
+        if (wrapper) {
+          if (show) {
+            wrapper.classList.remove('hidden');
+          } else {
+            wrapper.classList.add('hidden');
+          }
+        }
+      };
+
+      window.handleModalDeleteActivity = function() {
+        const actId = document.getElementById('modal-activity-id').value;
+        if (!actId) return;
+        const act = activities.find(a => a.id === actId);
+        if (!act) return;
+        closeAddActivityModal();
+        window.deleteActivity(new Event('click'), act.id, act.name);
+      };
+
       window.openAddActivityModal = function() {
         document.getElementById('modal-activity-id').value = '';
         document.getElementById('modal-activity-name').value = '';
@@ -1356,9 +1409,23 @@
         document.getElementById('modal-activity-price').value = '';
         document.getElementById('modal-activity-qty').value = '';
 
+        document.getElementById('modal-activity-act-price').value = '';
+        document.getElementById('modal-activity-act-qty').value = '';
+
+        document.getElementById('modal-activity-has-extra').checked = false;
+        window.toggleExtraPaymentFields(false);
+
+        document.getElementById('modal-activity-extra-price').value = '';
+        document.getElementById('modal-activity-extra-qty').value = '';
+        document.getElementById('modal-activity-extra-act-price').value = '';
+        document.getElementById('modal-activity-extra-act-qty').value = '';
+
         document.getElementById('activity-modal-title').innerText = 'הוספת פעילות שנתית חדשה';
         document.getElementById('modal-activity-submit-btn').innerText = 'צור פעילות';
         
+        // Hide delete button when adding
+        document.getElementById('modal-activity-delete-btn').classList.add('hidden');
+
         const modal = document.getElementById('activity-modal-backdrop');
         modal.classList.remove('hidden');
       };
@@ -1370,14 +1437,38 @@
         document.getElementById('modal-activity-id').value = act.id;
         document.getElementById('modal-activity-name').value = act.name;
         document.getElementById('modal-activity-desc').value = act.description || '';
+        
+        // Base payment
         document.getElementById('modal-activity-price').value = act.parent_payment_est_price || 0;
         document.getElementById('modal-activity-qty').value = act.parent_payment_est_qty || 0;
+        
+        // Base actuals
+        document.getElementById('modal-activity-act-price').value = act.parent_payment_act_price !== null && act.parent_payment_act_price !== undefined ? act.parent_payment_act_price : '';
+        document.getElementById('modal-activity-act-qty').value = act.parent_payment_act_qty !== null && act.parent_payment_act_qty !== undefined ? act.parent_payment_act_qty : '';
 
-        document.getElementById('activity-modal-title').innerText = 'עריכת פרטי פעילות ותקציב הורים מתוכנן';
+        // Extra payment
+        const hasExtra = (act.extra_payment_est_price !== undefined && act.extra_payment_est_price !== null && act.extra_payment_est_price > 0) ||
+                         (act.extra_payment_est_qty !== undefined && act.extra_payment_est_qty !== null && act.extra_payment_est_qty > 0) ||
+                         (act.extra_payment_act_price !== undefined && act.extra_payment_act_price !== null && act.extra_payment_act_price !== '') ||
+                         (act.extra_payment_act_qty !== undefined && act.extra_payment_act_qty !== null && act.extra_payment_act_qty !== '');
+        
+        document.getElementById('modal-activity-has-extra').checked = hasExtra;
+        window.toggleExtraPaymentFields(hasExtra);
+
+        document.getElementById('modal-activity-extra-price').value = act.extra_payment_est_price || '';
+        document.getElementById('modal-activity-extra-qty').value = act.extra_payment_est_qty || '';
+        document.getElementById('modal-activity-extra-act-price').value = act.extra_payment_act_price !== null && act.extra_payment_act_price !== undefined ? act.extra_payment_act_price : '';
+        document.getElementById('modal-activity-extra-act-qty').value = act.extra_payment_act_qty !== null && act.extra_payment_act_qty !== undefined ? act.extra_payment_act_qty : '';
+
+        document.getElementById('activity-modal-title').innerText = 'עריכת פרטי פעילות ותקציב הורים';
         document.getElementById('modal-activity-submit-btn').innerText = 'שמור שינויים';
+
+        // Show delete button when editing
+        document.getElementById('modal-activity-delete-btn').classList.remove('hidden');
 
         const modal = document.getElementById('activity-modal-backdrop');
         modal.classList.remove('hidden');
+        lucide.createIcons();
       };
 
       window.closeAddActivityModal = function() {
@@ -1393,6 +1484,20 @@
         const priceVal = Number(document.getElementById('modal-activity-price').value) || 0;
         const qtyVal = Number(document.getElementById('modal-activity-qty').value) || 0;
 
+        const actPriceRaw = document.getElementById('modal-activity-act-price').value;
+        const actQtyRaw = document.getElementById('modal-activity-act-qty').value;
+        const actPriceVal = actPriceRaw === '' ? null : Number(actPriceRaw);
+        const actQtyVal = actQtyRaw === '' ? null : Number(actQtyRaw);
+
+        const hasExtra = document.getElementById('modal-activity-has-extra').checked;
+        const extraPriceVal = hasExtra ? (Number(document.getElementById('modal-activity-extra-price').value) || 0) : 0;
+        const extraQtyVal = hasExtra ? (Number(document.getElementById('modal-activity-extra-qty').value) || 0) : 0;
+
+        const extraActPriceRaw = document.getElementById('modal-activity-extra-act-price').value;
+        const extraActQtyRaw = document.getElementById('modal-activity-extra-act-qty').value;
+        const extraActPriceVal = hasExtra && extraActPriceRaw !== '' ? Number(extraActPriceRaw) : null;
+        const extraActQtyVal = hasExtra && extraActQtyRaw !== '' ? Number(extraActQtyRaw) : null;
+
         if (!nameVal) return;
 
         const isNew = !actId;
@@ -1405,8 +1510,12 @@
             description: descVal,
             parent_payment_est_price: priceVal,
             parent_payment_est_qty: qtyVal,
-            parent_payment_act_price: null,
-            parent_payment_act_qty: null,
+            parent_payment_act_price: actPriceVal,
+            parent_payment_act_qty: actQtyVal,
+            extra_payment_est_price: extraPriceVal,
+            extra_payment_est_qty: extraQtyVal,
+            extra_payment_act_price: extraActPriceVal,
+            extra_payment_act_qty: extraActQtyVal,
             created_at: new Date().toISOString()
           };
 
@@ -1420,7 +1529,15 @@
           if (dbStatus === 'connected') {
             try {
               const client = supabase.createClient(supabaseUrl, supabaseKey);
-              const { error } = await client.from('activities').insert(newAct);
+              const { error } = await client.from('activities').insert({
+                id: newId,
+                name: nameVal,
+                description: descVal,
+                parent_payment_est_price: priceVal,
+                parent_payment_est_qty: qtyVal,
+                parent_payment_act_price: actPriceVal,
+                parent_payment_act_qty: actQtyVal
+              });
               if (error) throw error;
               showNotification(`הפעילות "${newAct.name}" נוצרה וסונכרנה לענן בהצלחה!`, 'emerald');
             } catch (err) {
@@ -1436,6 +1553,12 @@
             activities[idx].description = descVal;
             activities[idx].parent_payment_est_price = priceVal;
             activities[idx].parent_payment_est_qty = qtyVal;
+            activities[idx].parent_payment_act_price = actPriceVal;
+            activities[idx].parent_payment_act_qty = actQtyVal;
+            activities[idx].extra_payment_est_price = extraPriceVal;
+            activities[idx].extra_payment_est_qty = extraQtyVal;
+            activities[idx].extra_payment_act_price = extraActPriceVal;
+            activities[idx].extra_payment_act_qty = extraActQtyVal;
 
             saveDataToStorage();
             closeAddActivityModal();
@@ -1450,7 +1573,9 @@
                     name: nameVal,
                     description: descVal,
                     parent_payment_est_price: priceVal,
-                    parent_payment_est_qty: qtyVal
+                    parent_payment_est_qty: qtyVal,
+                    parent_payment_act_price: actPriceVal,
+                    parent_payment_act_qty: actQtyVal
                   })
                   .eq('id', actId);
                 if (error) throw error;
@@ -1888,104 +2013,7 @@
         }
       };
 
-      // ניהול עריכת הורים ששילמו
-      window.startEditParents = function(actId, actPrice, actQty, estPrice, estQty) {
-        editingParentActualsId = actId;
-        renderActivitiesList();
-        
-        const priceInput = document.getElementById(`input-parents-act-price-${actId}`);
-        const qtyInput = document.getElementById(`input-parents-act-qty-${actId}`);
-        if (priceInput && qtyInput) {
-          priceInput.value = actPrice !== null ? actPrice : estPrice;
-          qtyInput.value = actQty !== null ? actQty : estQty;
-        }
-      };
 
-      window.cancelEditParents = function(event) {
-        event.stopPropagation();
-        editingParentActualsId = null;
-        renderActivitiesList();
-      };
-
-      window.saveParentActuals = async function(event, actId) {
-        event.stopPropagation();
-        const priceInput = document.getElementById(`input-parents-act-price-${actId}`);
-        const qtyInput = document.getElementById(`input-parents-act-qty-${actId}`);
-        
-        const valPrice = priceInput.value === '' ? null : Number(priceInput.value);
-        const valQty = qtyInput.value === '' ? null : Number(qtyInput.value);
-
-        activities = activities.map(act => {
-          if (act.id === actId) {
-            return {
-              ...act,
-              parent_payment_act_price: valPrice,
-              parent_payment_act_qty: valQty
-            };
-          }
-          return act;
-        });
-
-        editingParentActualsId = null;
-        saveDataToStorage();
-        renderAll();
-
-        if (dbStatus === 'connected') {
-          try {
-            const client = supabase.createClient(supabaseUrl, supabaseKey);
-            const { error } = await client
-              .from('activities')
-              .update({
-                parent_payment_act_price: valPrice,
-                parent_payment_act_qty: valQty
-              })
-              .eq('id', actId);
-            
-            if (error) throw error;
-            showNotification('תקציב הורים בפועל עודכן בשרת בהצלחה.', 'emerald');
-          } catch (err) {
-            console.error(err);
-            showNotification(`שגיאת עדכון שרת: ${err.message}`, 'red');
-          }
-        }
-      };
-
-      window.quickCopyParentEstToAct = async function(actId) {
-        const act = activities.find(a => a.id === actId);
-        if (!act) return;
-
-        activities = activities.map(a => {
-          if (a.id === actId) {
-            return {
-              ...a,
-              parent_payment_act_price: a.parent_payment_est_price,
-              parent_payment_act_qty: a.parent_payment_est_qty
-            };
-          }
-          return a;
-        });
-
-        saveDataToStorage();
-        renderAll();
-
-        if (dbStatus === 'connected') {
-          try {
-            const client = supabase.createClient(supabaseUrl, supabaseKey);
-            const { error } = await client
-              .from('activities')
-              .update({
-                parent_payment_act_price: act.parent_payment_est_price,
-                parent_payment_act_qty: act.parent_payment_est_qty
-              })
-              .eq('id', actId);
-            
-            if (error) throw error;
-            showNotification('שולב תקציב הורים משוער לתוך בפועל בשרת.', 'emerald');
-          } catch (err) {
-            console.error(err);
-          }
-        }
-      };
 
 
       // הוספת מרכיב תקציבי
