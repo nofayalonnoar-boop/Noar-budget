@@ -143,16 +143,11 @@
           <h2 class="text-sm font-bold text-slate-850 flex items-center gap-1.5 select-none font-sans">
             <i data-lucide="sparkles" class="h-4 w-4 text-indigo-600"></i>
             <span>פעילויות</span>
-            <span id="activities-count-badge" class="text-[10px] text-slate-400 bg-slate-100 rounded-md px-1.5 py-0.5 font-bold">סה"כ: 0</span>
           </h2>
           
-          <button 
-            onclick="openAddActivityModal()"
-            class="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-xs"
-          >
-            <i data-lucide="plus" class="h-3.5 w-3.5"></i>
-            <span>הוסף פעילות</span>
-          </button>
+          <div id="activity-actions-container" class="flex items-center gap-2">
+            <!-- Rendered dynamically -->
+          </div>
         </div>
 
         <!-- Centralized list container of collapsible cards -->
@@ -326,9 +321,17 @@
           <div class="border-t border-slate-100 px-6 py-4 bg-white flex justify-between items-center">
             <span id="receipt-viewer-item-name" class="text-xs text-slate-400 font-sans truncate max-w-[250px]">שם ההוצאה</span>
             <div class="flex gap-2">
+              <button 
+                id="receipt-viewer-delete-btn"
+                onclick="window.deleteActiveReceiptFromViewer()" 
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold transition hidden"
+              >
+                <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                <span>מחק</span>
+              </button>
               <button onclick="window.printActiveReceipt()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-150 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold transition">
                 <i data-lucide="printer" class="h-3.5 w-3.5"></i>
-                <span>הדפס קבלה נוכחית</span>
+                <span>הדפס</span>
               </button>
               <button onclick="closeReceiptViewer()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-205 text-slate-700 rounded-xl text-xs font-bold transition">
                 סגור
@@ -340,6 +343,43 @@
 
       
       <!-- ==========================================
+          מודאל אימות סיסמה למצב עריכה (Edit Mode Password Modal)
+         ========================================== -->
+      <div 
+        id="password-modal-backdrop"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      >
+        <div class="relative w-full max-w-sm overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl text-center">
+          <button onclick="closePasswordModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition-all cursor-pointer">
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 mb-4 mt-2">
+            <i id="password-lock-icon" data-lucide="lock" class="h-6 w-6"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 font-sans mb-1">כניסה למצב עריכה</h3>
+          <p class="text-xs text-slate-500 mb-5">אנא הקלד את קוד הגישה</p>
+          
+          <div class="flex justify-center mb-5">
+            <input 
+              type="password" 
+              id="password-input-field" 
+              maxlength="4" 
+              inputmode="numeric" 
+              pattern="[0-9]*" 
+              placeholder="••••"
+              class="w-32 text-center text-2xl font-bold tracking-[0.7em] text-slate-800 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-2xl py-2 px-3 focus:outline-none focus:ring-4 focus:ring-indigo-100 transition duration-200"
+              oninput="if(this.value.length === 4) verifyEditModePassword()"
+            />
+          </div>
+
+          <div id="password-error-msg" class="text-xs font-semibold text-rose-600 mb-2 h-4 opacity-0 transition duration-200">
+            קוד גישה שגוי, אנא נסה שוב
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
           מודאל הוספת/עריכת פעילות חדשה (Add/Edit Activity Modal)
          ========================================== -->
       <div 
@@ -349,7 +389,7 @@
         <div class="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-xl text-right">
           <div class="flex items-center justify-between border-b pb-3 mb-4 border-slate-100">
             <h3 class="text-sm font-bold text-slate-850 flex items-center gap-1.5 select-none font-sans">
-              <i data-lucide="plus-circle" class="h-4.5 w-4.5 text-indigo-600"></i>
+              <i id="activity-modal-icon" data-lucide="plus-circle" class="h-4.5 w-4.5 text-indigo-600"></i>
               <span id="activity-modal-title">הוספת פעילות שנתית חדשה</span>
             </h3>
             <button onclick="closeAddActivityModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
@@ -357,7 +397,7 @@
             </button>
           </div>
 
-          <form id="form-add-activity" onsubmit="saveNewActivity(event)" class="space-y-4">
+          <form id="form-add-activity" onsubmit="saveNewActivity(event)" class="space-y-3">
             <input type="hidden" id="modal-activity-id" />
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">שם הפעילות *</label>
@@ -366,7 +406,7 @@
                 id="modal-activity-name" 
                 required
                 placeholder="לדוגמה: מחנה פסח, מסיבת סוף שנה..." 
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
               />
             </div>
             <div>
@@ -375,79 +415,70 @@
                 id="modal-activity-desc" 
                 rows="2"
                 placeholder="פירוט כללי על הפעילות והיעדים..." 
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-505"
+                class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-505"
               ></textarea>
             </div>
-            <!-- סוג הנתון: הערכה או בפועל -->
+            <!-- סוג הנתון: מתוכנן או בפועל שולם -->
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">סיווג נתוני מימון הורים</label>
               <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl select-none">
                 <button
                   type="button"
                   id="btn-modal-mode-est"
                   onclick="setModalFundingMode('est')"
-                  class="py-1.5 text-xs font-bold rounded-lg transition-all text-center select-none bg-white text-indigo-600 shadow-2xs"
+                  class="py-1 text-xs font-bold rounded-lg transition-all text-center select-none bg-white text-indigo-600 shadow-2xs"
                 >
-                  הערכה (מתוכנן)
+                  מתוכנן
                 </button>
                 <button
                   type="button"
                   id="btn-modal-mode-act"
                   onclick="setModalFundingMode('act')"
-                  class="py-1.5 text-xs font-bold rounded-lg transition-all text-center select-none text-slate-500 hover:text-slate-800"
+                  class="py-1 text-xs font-bold rounded-lg transition-all text-center select-none text-slate-500 hover:text-slate-800"
                 >
-                  בפועל (סופי)
+                  בפועל שולם
                 </button>
               </div>
               <input type="hidden" id="modal-activity-mode" value="est" />
             </div>
 
-            <!-- מימון הורים בסיסי -->
-            <div id="modal-funding-inputs-card" class="space-y-3 border border-slate-100 bg-slate-50/30 p-3.5 rounded-xl transition-all">
-              <span id="modal-funding-inputs-title" class="block text-[11px] font-extrabold text-indigo-950">מימון משתתפים/הורים (הערכה):</span>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label id="label-modal-activity-price" class="block text-[10px] font-bold text-slate-600 mb-1">תשלום להורה מתוכנן (₪) *</label>
-                  <input 
-                    type="number" 
-                    id="modal-activity-price" 
-                    min="0"
-                    required
-                    placeholder="0"
-                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label id="label-modal-activity-qty" class="block text-[10px] font-bold text-slate-600 mb-1">כמות משתתפים מתוכננת *</label>
-                  <input 
-                    type="number" 
-                    id="modal-activity-qty" 
-                    min="0"
-                    required
-                    placeholder="0"
-                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- מרכיב מימון הורים שני/נוסף (אופציונלי) -->
-            <div class="border border-slate-100 p-3.5 rounded-xl space-y-2">
-              <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700">
-                <input 
-                  type="checkbox" 
-                  id="modal-activity-has-extra" 
-                  onchange="toggleExtraPaymentFields(this.checked)" 
-                  class="rounded text-indigo-600 focus:ring-indigo-500" 
-                />
-                <span>הוסף מרכיב מימון הורים נוסף (לשני תעריפים)</span>
-              </label>
+            <!-- מימון הורים - תעריף ראשון ושני מאוחדים (ללא מסגרות לכל אחד) -->
+            <div id="modal-funding-inputs-card" class="space-y-2.5 border border-slate-100 bg-slate-50/30 p-3 rounded-xl transition-all">
               
-              <div id="extra-payment-fields-wrapper" class="hidden space-y-3 bg-slate-50/50 p-2.5 rounded-lg border border-slate-150 pt-3">
-                <span id="extra-payment-title" class="block text-[10px] font-extrabold text-indigo-950">מימון נוסף (הערכה):</span>
+              <!-- תעריף ראשון -->
+              <div>
+                <span class="block text-[11px] font-bold text-indigo-950 mb-1.5">תעריף ראשון</span>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label id="label-modal-activity-extra-price" class="block text-[10px] text-slate-500 mb-1">תשלום נוסף מתוכנן (₪)</label>
+                    <label id="label-modal-activity-price" class="block text-[10px] text-slate-500 mb-1">תשלום להורה (₪) *</label>
+                    <input 
+                      type="number" 
+                      id="modal-activity-price" 
+                      min="0"
+                      required
+                      placeholder="0"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label id="label-modal-activity-qty" class="block text-[10px] text-slate-500 mb-1">כמות משתתפים *</label>
+                    <input 
+                      type="number" 
+                      id="modal-activity-qty" 
+                      min="0"
+                      required
+                      placeholder="0"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- תעריף שני -->
+              <div class="pt-2 border-t border-slate-200/50">
+                <span class="block text-[11px] font-bold text-indigo-950 mb-1.5">תעריף שני</span>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label id="label-modal-activity-extra-price" class="block text-[10px] text-slate-500 mb-1">תשלום להורה (₪)</label>
                     <input 
                       type="number" 
                       id="modal-activity-extra-price" 
@@ -457,7 +488,7 @@
                     />
                   </div>
                   <div>
-                    <label id="label-modal-activity-extra-qty" class="block text-[10px] text-slate-500 mb-1">כמות נוספת מתוכננת</label>
+                    <label id="label-modal-activity-extra-qty" class="block text-[10px] text-slate-500 mb-1">כמות משתתפים</label>
                     <input 
                       type="number" 
                       id="modal-activity-extra-qty" 
@@ -468,9 +499,10 @@
                   </div>
                 </div>
               </div>
+
             </div>
 
-            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
               <button 
                 type="button" 
                 id="modal-activity-delete-btn"
@@ -478,7 +510,7 @@
                 class="hidden rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 text-xs font-bold px-4 py-2 transition inline-flex items-center gap-1.5"
               >
                 <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
-                <span>מחק פעילות</span>
+                <span>מחק</span>
               </button>
               <div class="flex gap-2 mr-auto">
                 <button 
@@ -621,6 +653,7 @@
       let activities = [];
       let budgetItems = [];
       let selectedActivityId = '';
+      let isEditMode = false;
       
       let supabaseUrl = 'https://rbckzxfgtitknlfkfnhv.supabase.co';
       let supabaseKey = 'sb_publishable_CtYnbiiIcNlZVq9rmQwofg_htbw8lA5';
@@ -848,9 +881,16 @@
         const actParentFunding = act.parent_payment_is_actual ? parentFundingValue : 0;
           
         const estCommitteeFunding = Math.max(0, totalEstCost - estParentFunding);
-        const actCommitteeFunding = activityHasActualReport(act.id)
-          ? Math.max(0, totalActCost - actParentFunding)
-          : 0;
+        let actCommitteeFunding = 0;
+        if (activityHasActualReport(act.id)) {
+          if (act.parent_payment_is_actual) {
+            actCommitteeFunding = Math.max(0, totalActCost - actParentFunding);
+          } else {
+            actCommitteeFunding = estCommitteeFunding;
+          }
+        } else {
+          actCommitteeFunding = 0;
+        }
 
         return {
           totalEstCost,
@@ -870,7 +910,7 @@
       function renderAll() {
         renderStats();
         renderActivitiesList();
-        // renderSelectedActivityPane(); // removed for unified inline accordion
+        renderActivityActions();
         lucide.createIcons();
       }
 
@@ -918,6 +958,99 @@
         if (actParents) actParents.innerText = `₪${totalActParentFunding.toLocaleString()}`;
         if (actCommittee) actCommittee.innerText = `₪${totalActCommitteeFunding.toLocaleString()}`;
       }
+
+
+      function renderActivityActions() {
+        const container = document.getElementById('activity-actions-container');
+        if (!container) return;
+
+        if (!isEditMode) {
+          container.innerHTML = `
+            <!-- Edit Mode Toggle Button -->
+            <button 
+              onclick="promptPasswordModal()"
+              class="flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300 rounded-xl p-2 transition shadow-3xs cursor-pointer hover:scale-105"
+              title="לחץ להזנת קוד ומעבר למצב עריכה"
+            >
+              <i data-lucide="lock" class="h-4 w-4 text-slate-500"></i>
+            </button>
+          `;
+        } else {
+          container.innerHTML = `
+            <!-- Edit Mode Toggle Button -->
+            <button 
+              onclick="exitEditMode()"
+              class="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-bold transition shadow-3xs cursor-pointer hover:scale-102"
+              title="לחץ ליציאה ממצב עריכה"
+            >
+              <i data-lucide="unlock" class="h-3.5 w-3.5 text-emerald-600"></i>
+              <span>עריכה</span>
+            </button>
+
+            <!-- Active Add Activity -->
+            <button 
+              onclick="openAddActivityModal()"
+              class="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-xs cursor-pointer hover:scale-102"
+            >
+              <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+              <span>הוסף פעילות</span>
+            </button>
+          `;
+        }
+      }
+
+      window.promptPasswordModal = function() {
+        const backdrop = document.getElementById('password-modal-backdrop');
+        const input = document.getElementById('password-input-field');
+        const error = document.getElementById('password-error-msg');
+        
+        if (backdrop) backdrop.classList.remove('hidden');
+        if (input) {
+          input.value = '';
+          setTimeout(() => input.focus(), 150);
+        }
+        if (error) {
+          error.classList.add('opacity-0');
+        }
+        lucide.createIcons();
+      };
+
+      window.closePasswordModal = function() {
+        const backdrop = document.getElementById('password-modal-backdrop');
+        if (backdrop) backdrop.classList.add('hidden');
+      };
+
+      window.verifyEditModePassword = function() {
+        const input = document.getElementById('password-input-field');
+        const error = document.getElementById('password-error-msg');
+        
+        if (input && input.value === '5555') {
+          isEditMode = true;
+          window.closePasswordModal();
+          showNotification('נכנסת למצב עריכה בהצלחה. כעת ניתן להוסיף, לשנות ולמחוק.', 'indigo');
+          renderAll();
+        } else {
+          if (error) {
+            error.classList.remove('opacity-0');
+          }
+          // Shake effect
+          const icon = document.getElementById('password-lock-icon');
+          if (icon) {
+            icon.classList.add('animate-bounce');
+            setTimeout(() => icon.classList.remove('animate-bounce'), 800);
+          }
+          if (input) {
+            input.value = '';
+            input.focus();
+          }
+        }
+      };
+
+      window.exitEditMode = function() {
+        isEditMode = false;
+        showNotification('יצאת ממצב עריכה. הנתונים נעולים לצפייה בלבד.', 'indigo');
+        renderAll();
+      };
 
 
       // Keep track of which activities are expanded
@@ -999,7 +1132,7 @@
           let committeeText = `
             <div class="text-slate-650">מתוכנן: ₪${calcs.estCommitteeFunding.toLocaleString()}</div>
           `;
-          if (calcs.hasActualReport) {
+          if (calcs.hasActualReport && act.parent_payment_is_actual) {
             committeeText += `
               <div class="text-indigo-700 font-extrabold mt-0.5">בפועל: ₪${calcs.actCommitteeFunding.toLocaleString()}</div>
             `;
@@ -1022,6 +1155,7 @@
                   <div>
                     <h4 class="font-extrabold text-slate-900 text-sm md:text-base flex flex-wrap items-center gap-2">
                       <span>${act.name} - ₪${calcs.totalEstCost.toLocaleString()}</span>
+                      ${isEditMode ? `
                       <button 
                         onclick="event.stopPropagation(); window.openEditActivityModal('${act.id}')"
                         class="p-1 rounded-lg hover:bg-slate-100 flex items-center justify-center transition text-slate-400 hover:text-indigo-600 focus:outline-none"
@@ -1029,6 +1163,7 @@
                       >
                         <i data-lucide="edit-2" class="h-3.5 w-3.5"></i>
                       </button>
+                      ` : ''}
                     </h4>
                     <p class="text-[11px] text-slate-450 mt-1 line-clamp-1 max-w-[500px]">${act.description || 'ללא תיאור לפעילות זו'}</p>
                   </div>
@@ -1058,7 +1193,7 @@
                     if (!hasAnyItems) {
                       return `
                         <div class="py-5 text-center text-slate-400 text-xs italic bg-slate-50 border border-dashed border-slate-200 rounded-xl">
-                          אין כרגע מרכיבי תקציב לפעילות זו. לחץ על כפתור ״הוסף מרכיב תקציב פנימי״ למטה.
+                          אין כרגע מרכיבי תקציב לפעילות זו. לחץ על כפתור ״הוספה״ למטה.
                         </div>
                       `;
                     }
@@ -1135,16 +1270,13 @@
                                           
                                           <!-- Receipt Upload -->
                                           <div class="flex flex-col gap-1.5 bg-slate-100/80 rounded-xl p-2 border border-slate-200 w-full max-w-sm">
-                                            <div class="flex items-center justify-between">
-                                              <label class="cursor-pointer inline-flex items-center justify-center h-8 w-8 bg-white border border-slate-250 hover:bg-slate-50 transition rounded-xl text-slate-700 select-none" title="צרף קבלה פנימית">
+                                            <div class="flex items-center gap-2">
+                                              <label class="cursor-pointer inline-flex items-center justify-center h-8 w-8 bg-white border border-slate-250 hover:bg-slate-50 transition rounded-xl text-slate-700 select-none shadow-3xs" title="צרף קבלה פנימית">
                                                 <i data-lucide="upload" class="h-4 w-4 text-indigo-600"></i>
-                                                
                                                 <input type="file" class="hidden" accept="image/*,application/pdf" onchange="handleInlineFileUpload(event)" />
                                               </label>
-                                              <span class="text-[9px] text-slate-400 font-bold select-none">קבלות להוצאה זו</span>
-                                            </div>
-                                            
-                                            <div class="flex flex-wrap gap-1.5 mt-1">
+
+                                              <!-- Page Icon Button (כפתור הדף) to show gallery -->
                                               ${(() => {
                                                 let imgs = [];
                                                 if (activeInlineEdit.receiptBase64) {
@@ -1154,17 +1286,22 @@
                                                     imgs = [activeInlineEdit.receiptBase64];
                                                   }
                                                 }
-                                                if (imgs.length === 0) {
-                                                  return `<span class="text-[8.5px] text-slate-400 italic">טרם צורפו קבלות</span>`;
-                                                }
-                                                return imgs.map((img, idx) => `
-                                                  <div class="relative group h-9 w-9 border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs hover:scale-105 transition-all">
-                                                    <img class="h-full w-full object-cover cursor-pointer" src="${img}" onclick="window.viewReceiptImageDirect('${img}')" />
-                                                    <button type="button" onclick="event.stopPropagation(); removeSpecificReceipt(${idx})" class="absolute -top-0.5 -right-0.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-0.5 shadow-sm transition-all">
-                                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                if (imgs.length > 0) {
+                                                  return `
+                                                    <button 
+                                                      type="button"
+                                                      onclick="syncInlineInputs(); window.openReceiptsFromInlineEdit()"
+                                                      class="inline-flex items-center justify-center h-8 w-8 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-xl transition shadow-3xs hover:scale-105 cursor-pointer animate-none"
+                                                      title="הצג ונהל קבלות שצורפו (${imgs.length})"
+                                                    >
+                                                      <i data-lucide="file-text" class="h-4.5 w-4.5 text-emerald-600"></i>
                                                     </button>
-                                                  </div>
-                                                `).join('');
+                                                    <span class="text-[10px] text-emerald-700 font-bold select-none bg-emerald-100/60 px-2 py-0.5 rounded-full">
+                                                      ${imgs.length} קבלות
+                                                    </span>
+                                                  `;
+                                                }
+                                                return `<span class="text-[9px] text-slate-400 font-bold select-none pr-1">טרם צורפו קבלות</span>`;
                                               })()}
                                             </div>
                                           </div>
@@ -1174,7 +1311,7 @@
                                         <div class="flex items-center gap-1">
                                           <button 
                                             onclick="saveInlineEdit()" 
-                                            class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg transition-all shadow-2xs animate-pulse"
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg transition-all shadow-2xs"
                                           >
                                             שמור
                                           </button>
@@ -1238,8 +1375,7 @@
 
                               return `
                                 <tr 
-                                  onclick="startInlineEdit('${item.id}', '${act.id}')" 
-                                  class="hover:bg-indigo-50/30 transition cursor-pointer"
+                                  ${isEditMode ? `onclick="startInlineEdit('${item.id}', '${act.id}')" class="hover:bg-indigo-50/30 transition cursor-pointer"` : `class="hover:bg-slate-50/20 transition cursor-default"`}
                                 >
                                   <td class="py-2 px-2 font-bold text-slate-800 text-id text-right">
                                     <div>${item.name}</div>
@@ -1307,16 +1443,13 @@
                                       
                                       <!-- Receipt Upload -->
                                       <div class="flex flex-col gap-1.5 bg-slate-100/80 rounded-xl p-2 border border-slate-200 w-full max-w-sm">
-                                        <div class="flex items-center justify-between">
-                                          <label class="cursor-pointer inline-flex items-center justify-center h-8 w-8 bg-white border border-slate-250 hover:bg-slate-50 transition rounded-xl text-slate-700 select-none" title="צרף קבלה פנימית">
+                                        <div class="flex items-center gap-2">
+                                          <label class="cursor-pointer inline-flex items-center justify-center h-8 w-8 bg-white border border-slate-250 hover:bg-slate-50 transition rounded-xl text-slate-700 select-none shadow-3xs" title="צרף קבלה פנימית">
                                             <i data-lucide="upload" class="h-4 w-4 text-indigo-600"></i>
-                                            
                                             <input type="file" class="hidden" accept="image/*,application/pdf" onchange="handleInlineFileUpload(event)" />
                                           </label>
-                                          <span class="text-[9px] text-slate-400 font-bold select-none">קבלות להוצאה זו</span>
-                                        </div>
-                                        
-                                        <div class="flex flex-wrap gap-1.5 mt-1">
+
+                                          <!-- Page Icon Button (כפתור הדף) to show gallery -->
                                           ${(() => {
                                             let imgs = [];
                                             if (activeInlineEdit.receiptBase64) {
@@ -1326,17 +1459,22 @@
                                                 imgs = [activeInlineEdit.receiptBase64];
                                               }
                                             }
-                                            if (imgs.length === 0) {
-                                              return `<span class="text-[8.5px] text-slate-400 italic">טרם צורפו קבלות</span>`;
-                                            }
-                                            return imgs.map((img, idx) => `
-                                              <div class="relative group h-9 w-9 border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs hover:scale-105 transition-all">
-                                                <img class="h-full w-full object-cover cursor-pointer" src="${img}" onclick="window.viewReceiptImageDirect('${img}')" />
-                                                <button type="button" onclick="event.stopPropagation(); removeSpecificReceipt(${idx})" class="absolute -top-0.5 -right-0.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-0.5 shadow-sm transition-all">
-                                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            if (imgs.length > 0) {
+                                              return `
+                                                <button 
+                                                  type="button"
+                                                  onclick="syncInlineInputs(); window.openReceiptsFromInlineEdit()"
+                                                  class="inline-flex items-center justify-center h-8 w-8 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-xl transition shadow-3xs hover:scale-105 cursor-pointer animate-none"
+                                                  title="הצג ונהל קבלות שצורפו (${imgs.length})"
+                                                >
+                                                  <i data-lucide="file-text" class="h-4.5 w-4.5 text-emerald-600"></i>
                                                 </button>
-                                              </div>
-                                            `).join('');
+                                                <span class="text-[10px] text-emerald-700 font-bold select-none bg-emerald-100/60 px-2 py-0.5 rounded-full">
+                                                  ${imgs.length} קבלות
+                                                    </span>
+                                              `;
+                                            }
+                                            return `<span class="text-[9px] text-slate-400 font-bold select-none pr-1">טרם צורפו קבלות</span>`;
                                           })()}
                                         </div>
                                       </div>
@@ -1346,7 +1484,7 @@
                                     <div class="flex items-center gap-1">
                                       <button 
                                         onclick="saveInlineEdit()" 
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg transition-all shadow-2xs animate-pulse"
+                                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg transition-all shadow-2xs"
                                       >
                                         שמור
                                       </button>
@@ -1369,13 +1507,15 @@
 
                   <!-- Add budget item trigger and Print receipts of this specific activity button -->
                   <div class="pt-3 border-t border-slate-100 flex items-center justify-center gap-2">
+                    ${isEditMode ? `
                     <button 
                       onclick="event.stopPropagation(); startInlineEdit(null, '${act.id}')"
                       class="inline-flex items-center gap-1.5 border border-indigo-150 hover:border-indigo-250 bg-indigo-50/40 hover:bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-xl text-xs font-bold transition shadow-3xs"
                     >
                       <i data-lucide="plus-circle" class="h-3.5 w-3.5"></i>
-                      <span>הוסף מרכיב תקציב פנימי</span>
+                      <span>הוספה</span>
                     </button>
+                    ` : ''}
 
                     ${(() => {
                       const activityItems = budgetItems.filter(item => item.activity_id === act.id && item.receipt_url_or_base64);
@@ -1409,100 +1549,80 @@
       // ==========================================
       // Modal controls for Adding / Editing Activity
       // ==========================================
-      window.toggleExtraPaymentFields = function(show) {
-        const wrapper = document.getElementById('extra-payment-fields-wrapper');
-        if (wrapper) {
-          if (show) {
-            wrapper.classList.remove('hidden');
-          } else {
-            wrapper.classList.add('hidden');
-          }
-        }
-      };
 
       window.setModalFundingMode = function(mode) {
         document.getElementById('modal-activity-mode').value = mode;
         const btnEst = document.getElementById('btn-modal-mode-est');
         const btnAct = document.getElementById('btn-modal-mode-act');
         const card = document.getElementById('modal-funding-inputs-card');
-        const title = document.getElementById('modal-funding-inputs-title');
-        const priceLabel = document.getElementById('label-modal-activity-price');
-        const qtyLabel = document.getElementById('label-modal-activity-qty');
-
-        const extraTitle = document.getElementById('extra-payment-title');
-        const extraPriceLabel = document.getElementById('label-modal-activity-extra-price');
-        const extraQtyLabel = document.getElementById('label-modal-activity-extra-qty');
 
         if (mode === 'est') {
           // Select Estimate
-          btnEst.className = "py-1.5 text-xs font-bold rounded-lg transition-all text-center select-none bg-white text-indigo-600 shadow-2xs";
-          btnAct.className = "py-1.5 text-xs font-bold rounded-lg transition-all text-center select-none text-slate-500 hover:text-slate-800";
-          
-          card.className = "space-y-3 border border-slate-100 bg-slate-50/30 p-3.5 rounded-xl transition-all";
-          title.className = "block text-[11px] font-extrabold text-indigo-950 transition-all";
-          title.innerText = "מימון משתתפים/הורים (הערכה):";
-          
-          priceLabel.className = "block text-[10px] font-bold text-slate-600 mb-1 transition-all";
-          priceLabel.innerText = "תשלום להורה מתוכנן (₪) *";
-          
-          qtyLabel.className = "block text-[10px] font-bold text-slate-600 mb-1 transition-all";
-          qtyLabel.innerText = "כמות משתתפים מתוכננת *";
-
-          if (extraTitle) {
-            extraTitle.innerText = "מימון נוסף (הערכה):";
-            extraPriceLabel.innerText = "תשלום נוסף מתוכנן (₪)";
-            extraQtyLabel.innerText = "כמות נוספת מתוכננת";
-            extraPriceLabel.className = "block text-[10px] text-slate-500 mb-1 transition-all";
-            extraQtyLabel.className = "block text-[10px] text-slate-500 mb-1 transition-all";
-          }
+          btnEst.className = "py-1 text-xs font-bold rounded-lg transition-all text-center select-none bg-white text-indigo-600 shadow-2xs";
+          btnAct.className = "py-1 text-xs font-bold rounded-lg transition-all text-center select-none text-slate-500 hover:text-slate-800";
+          card.className = "space-y-2.5 border border-slate-100 bg-slate-50/30 p-3 rounded-xl transition-all";
         } else {
-          // Select Actual
-          btnAct.className = "py-1.5 text-xs font-bold rounded-lg transition-all text-center select-none bg-emerald-600 text-white shadow-2xs";
-          btnEst.className = "py-1.5 text-xs font-bold rounded-lg transition-all text-center select-none text-slate-500 hover:text-slate-800";
-          
-          card.className = "space-y-3 border border-emerald-100 bg-emerald-50/10 p-3.5 rounded-xl transition-all";
-          title.className = "block text-[11px] font-extrabold text-emerald-950 transition-all";
-          title.innerText = "מימון משתתפים/הורים (בפועל):";
-          
-          priceLabel.className = "block text-[10px] font-bold text-emerald-800 mb-1 transition-all";
-          priceLabel.innerText = "תשלום להורה בפועל (₪) *";
-          
-          qtyLabel.className = "block text-[10px] font-bold text-emerald-800 mb-1 transition-all";
-          qtyLabel.innerText = "כמות משתתפים בפועל *";
-
-          if (extraTitle) {
-            extraTitle.innerText = "מימון נוסף (בפועל):";
-            extraPriceLabel.innerText = "תשלום נוסף בפועל (₪)";
-            extraQtyLabel.innerText = "כמות נוספת בפועל";
-            extraPriceLabel.className = "block text-[10px] text-emerald-800 mb-1 transition-all";
-            extraQtyLabel.className = "block text-[10px] text-emerald-800 mb-1 transition-all";
-          }
+          // Select Actual (בפועל שולם)
+          btnAct.className = "py-1 text-xs font-bold rounded-lg transition-all text-center select-none bg-emerald-600 text-white shadow-2xs";
+          btnEst.className = "py-1 text-xs font-bold rounded-lg transition-all text-center select-none text-slate-500 hover:text-slate-800";
+          card.className = "space-y-2.5 border border-emerald-150 bg-emerald-50/10 p-3 rounded-xl transition-all";
         }
       };
 
-      window.handleModalDeleteActivity = function() {
+      window.handleModalDeleteActivity = async function() {
         const actId = document.getElementById('modal-activity-id').value;
         if (!actId) return;
         const act = activities.find(a => a.id === actId);
         if (!act) return;
+
+        if (!confirm(`האם אתה בטוח שברצונך למחוק את הפעילות "${act.name}" ואת כל מרכיבי התקציב שלה לצמיתות?`)) {
+          return;
+        }
+
         closeAddActivityModal();
-        window.deleteActivity(new Event('click'), act.id, act.name);
+
+        activities = activities.filter(a => a.id !== act.id);
+        budgetItems = budgetItems.filter(item => item.activity_id !== act.id);
+
+        if (selectedActivityId === act.id) {
+          selectedActivityId = activities.length > 0 ? activities[0].id : '';
+        }
+
+        saveDataToStorage();
+        renderAll();
+
+        if (dbStatus === 'connected') {
+          try {
+            const client = supabase.createClient(supabaseUrl, supabaseKey);
+            const { error } = await client.from('activities').delete().eq('id', act.id);
+            if (error) throw error;
+          } catch (err) {
+            console.error(err);
+            showNotification(`שגיאה בשמירה בענן: ${err.message}. הנתונים נשמרו ויסונכרנו בהמשך.`, 'amber');
+          }
+        }
+
+        showNotification(`הפעילות "${act.name}" נמחקה בהצלחה.`, 'indigo');
       };
 
       window.openAddActivityModal = function() {
+        if (!isEditMode) {
+          promptPasswordModal();
+          return;
+        }
         document.getElementById('modal-activity-id').value = '';
         document.getElementById('modal-activity-name').value = '';
         document.getElementById('modal-activity-desc').value = '';
         document.getElementById('modal-activity-price').value = '';
         document.getElementById('modal-activity-qty').value = '';
 
-        document.getElementById('modal-activity-has-extra').checked = false;
-        window.toggleExtraPaymentFields(false);
-
         document.getElementById('modal-activity-extra-price').value = '';
         document.getElementById('modal-activity-extra-qty').value = '';
 
         window.setModalFundingMode('est');
+
+        const modalIcon = document.getElementById('activity-modal-icon');
+        if (modalIcon) modalIcon.classList.remove('hidden');
 
         document.getElementById('activity-modal-title').innerText = 'הוספת פעילות שנתית חדשה';
         document.getElementById('modal-activity-submit-btn').innerText = 'צור פעילות';
@@ -1515,6 +1635,10 @@
       };
 
       window.openEditActivityModal = function(actId) {
+        if (!isEditMode) {
+          promptPasswordModal();
+          return;
+        }
         const act = activities.find(a => a.id === actId);
         if (!act) return;
 
@@ -1529,18 +1653,14 @@
         document.getElementById('modal-activity-price').value = act.parent_payment_price !== null && act.parent_payment_price !== undefined ? act.parent_payment_price : '';
         document.getElementById('modal-activity-qty').value = act.parent_payment_qty !== null && act.parent_payment_qty !== undefined ? act.parent_payment_qty : '';
 
-        // Extra payment
-        const hasExtra = (act.extra_payment_price !== undefined && act.extra_payment_price !== null && act.extra_payment_price > 0) ||
-                         (act.extra_payment_qty !== undefined && act.extra_payment_qty !== null && act.extra_payment_qty > 0);
-        
-        document.getElementById('modal-activity-has-extra').checked = hasExtra;
-        window.toggleExtraPaymentFields(hasExtra);
-
         document.getElementById('modal-activity-extra-price').value = act.extra_payment_price !== null && act.extra_payment_price !== undefined ? act.extra_payment_price : '';
         document.getElementById('modal-activity-extra-qty').value = act.extra_payment_qty !== null && act.extra_payment_qty !== undefined ? act.extra_payment_qty : '';
 
-        document.getElementById('activity-modal-title').innerText = 'עריכת פרטי פעילות ותקציב הורים';
-        document.getElementById('modal-activity-submit-btn').innerText = 'שמור שינויים';
+        const modalIcon = document.getElementById('activity-modal-icon');
+        if (modalIcon) modalIcon.classList.add('hidden');
+
+        document.getElementById('activity-modal-title').innerText = 'עריכת פעילות';
+        document.getElementById('modal-activity-submit-btn').innerText = 'שמור';
 
         // Show delete button when editing
         document.getElementById('modal-activity-delete-btn').classList.remove('hidden');
@@ -1565,9 +1685,9 @@
         const currentPrice = Number(document.getElementById('modal-activity-price').value) || 0;
         const currentQty = Number(document.getElementById('modal-activity-qty').value) || 0;
 
-        const hasExtra = document.getElementById('modal-activity-has-extra').checked;
-        const currentExtraPrice = hasExtra ? (Number(document.getElementById('modal-activity-extra-price').value) || 0) : 0;
-        const currentExtraQty = hasExtra ? (Number(document.getElementById('modal-activity-extra-qty').value) || 0) : 0;
+        const currentExtraPrice = Number(document.getElementById('modal-activity-extra-price').value) || 0;
+        const currentExtraQty = Number(document.getElementById('modal-activity-extra-qty').value) || 0;
+        const hasExtra = (currentExtraPrice > 0 || currentExtraQty > 0);
 
         if (!nameVal) return;
 
@@ -1649,6 +1769,10 @@
       let activeInlineEdit = null;
 
       window.startInlineEdit = function(itemId, activityId) {
+        if (!isEditMode) {
+          showNotification('נא להפעיל מצב עריכה תחילה', 'amber');
+          return;
+        }
         if (activeInlineEdit && activeInlineEdit.id === itemId && itemId !== null) {
           return;
         }
@@ -1970,6 +2094,10 @@
 
       window.deleteActivity = async function(event, id, name) {
         event.stopPropagation();
+        if (!isEditMode) {
+          showNotification('נא להפעיל מצב עריכה תחילה', 'amber');
+          return;
+        }
         if (!confirm(`האם אתה בטוח שברצונך למחוק את הפעילות "${name}" ואת כל מרכיבי התקציב שלה לצמיתות?`)) return;
 
         activities = activities.filter(a => a.id !== id);
@@ -2286,6 +2414,64 @@
       let viewerImages = [];
       let viewerActiveIndex = 0;
       let viewerItemName = '';
+      let viewerIsEditable = false;
+
+      window.openReceiptsFromInlineEdit = function() {
+        if (!activeInlineEdit) return;
+        viewerItemName = activeInlineEdit.name || 'מרכיב תקציב';
+        
+        let imgs = [];
+        if (activeInlineEdit.receiptBase64) {
+          if (activeInlineEdit.receiptBase64.startsWith('[')) {
+            try {
+              imgs = JSON.parse(activeInlineEdit.receiptBase64);
+            } catch (e) {
+              imgs = [activeInlineEdit.receiptBase64];
+            }
+          } else {
+            imgs = [activeInlineEdit.receiptBase64];
+          }
+        }
+
+        viewerImages = imgs;
+        viewerActiveIndex = 0;
+        viewerIsEditable = true;
+
+        showReceiptViewerModal();
+      };
+
+      window.deleteActiveReceiptFromViewer = function() {
+        if (!isEditMode) {
+          showNotification('נא להפעיל מצב עריכה תחילה', 'amber');
+          return;
+        }
+        if (!confirm('האם אתה בטוח שברצונך למחוק קבלה זו?')) return;
+        
+        if (viewerActiveIndex >= 0 && viewerActiveIndex < viewerImages.length) {
+          viewerImages.splice(viewerActiveIndex, 1);
+          
+          if (activeInlineEdit) {
+            if (viewerImages.length > 0) {
+              activeInlineEdit.receiptBase64 = JSON.stringify(viewerImages);
+            } else {
+              activeInlineEdit.receiptBase64 = null;
+            }
+          }
+          
+          if (viewerImages.length === 0) {
+            closeReceiptViewer();
+            renderAll();
+            showNotification('כל הקבלות נמחקו', 'indigo');
+          } else {
+            if (viewerActiveIndex >= viewerImages.length) {
+              viewerActiveIndex = viewerImages.length - 1;
+            }
+            updateViewerUi();
+            renderAll();
+            showNotification('הקבלה נמחקה בהצלחה', 'indigo');
+          }
+        }
+      };
 
       window.openMultipleReceiptsViewer = function(itemId) {
         const item = budgetItems.find(it => it.id === itemId);
@@ -2306,6 +2492,7 @@
 
         viewerImages = imgs;
         viewerActiveIndex = 0;
+        viewerIsEditable = false;
 
         showReceiptViewerModal();
       };
@@ -2315,6 +2502,7 @@
         viewerImages = [imgBase64];
         viewerActiveIndex = 0;
         viewerItemName = activeInlineEdit ? activeInlineEdit.name : 'קבלה חדשה';
+        viewerIsEditable = false;
         showReceiptViewerModal();
       };
 
@@ -2354,6 +2542,15 @@
         const nextBtn = document.getElementById('receipt-viewer-next-btn');
 
         if (!activeImg) return;
+
+        const deleteBtn = document.getElementById('receipt-viewer-delete-btn');
+        if (deleteBtn) {
+          if (viewerIsEditable && isEditMode) {
+            deleteBtn.classList.remove('hidden');
+          } else {
+            deleteBtn.classList.add('hidden');
+          }
+        }
 
         const currentSrc = viewerImages[viewerActiveIndex] || '';
         activeImg.src = currentSrc;
