@@ -78,29 +78,7 @@
   <!-- ==========================================
       HEADER (Hidden in Parent Completion Print)
      ========================================== -->
-  <header id="app-header" class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs no-print">
-    <div class="mx-auto max-w-7xl px-4 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div class="bg-brand-600 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-md">
-          <i class="fa-solid fa-file-signature text-base"></i>
-        </div>
-        <div>
-          <h1 class="text-sm font-extrabold text-slate-900 tracking-tight leading-none">מערכת אישורי הורים</h1>
-        </div>
-      </div>
-      
-      <!-- Nav Button Links -->
-      <div class="flex items-center gap-2">
-        <a 
-          href="index.html" 
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer"
-        >
-          <i class="fa-solid fa-calculator text-slate-400"></i>
-          <span>מרכז התקציב</span>
-        </a>
-      </div>
-    </div>
-  </header>
+
 
   <!-- DB Sync Status Banner (Hidden in print) -->
   <div id="db-status-banner" class="bg-amber-50 border-b border-amber-100 px-4 py-1.5 text-center text-[11px] font-bold text-amber-800 no-print hidden">
@@ -121,6 +99,14 @@
       <!-- Top Actions Row -->
       <div class="flex items-center justify-end flex-wrap gap-3">
         <button 
+          id="btn-refresh-dashboard"
+          onclick="refreshDashboardData()" 
+          class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer hover:scale-102"
+        >
+          <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i>
+          <span>רענן נתונים</span>
+        </button>
+        <button 
           onclick="openAddTemplateModal()" 
           class="bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer hover:scale-102"
         >
@@ -137,9 +123,8 @@
           <div class="border-b border-slate-100 p-4 bg-slate-50/50 flex items-center justify-between">
             <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <i class="fa-regular fa-folder text-brand-600"></i>
-              <span>טפסים קבועים שיצרת</span>
+              <span>פעילויות</span>
             </span>
-            <span id="templates-count-badge" class="bg-brand-50 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
           </div>
 
           <div id="templates-list-container" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
@@ -483,59 +468,42 @@
           </div>
         </div>
 
-        <!-- Disclaimer & Submission button -->
-        <div class="pt-4 border-t border-slate-100 space-y-4">
-
-          <button 
-            type="submit" 
-            id="parent-submit-btn"
-            disabled
-            class="w-full bg-slate-200 text-slate-400 font-extrabold py-3 rounded-2xl text-xs transition-all flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
-          >
-            <i class="fa-solid fa-file-signature"></i>
-            <span>שמור והגש אישור חתום לפעילות</span>
-          </button>
-        </div>
-
       </form>
-
     </div>
 
-
-
     <!-- ==========================================
-        VIEW 3: COMPLETED FORM DISPLAY (Print Friendly / PDF ready)
-       ========================================== -->
+         VIEW 3: COMPLETED FORM DISPLAY (Print Friendly / PDF ready)
+        ========================================== -->
     <div id="view-completed-form" class="hidden max-w-3xl mx-auto space-y-6">
       
-      <!-- High-Polished Success Screen Hero Card (no-print) -->
-      <div class="bg-white border border-slate-100 rounded-3xl p-8 md:p-12 text-center space-y-6 shadow-sm no-print">
-        <div class="mx-auto w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 ring-8 ring-emerald-50/50">
-          <i class="fa-solid fa-check text-2xl"></i>
+      <!-- High-Polished Document Detail Header Card (no-print) -->
+      <div class="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 text-center space-y-4 shadow-sm no-print">
+        <div class="mx-auto w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-650 ring-6 ring-indigo-50/50">
+          <i class="fa-solid fa-file-invoice text-lg"></i>
         </div>
         
-        <div class="space-y-2">
-          <h2 class="text-xl md:text-2xl font-black text-slate-950 tracking-tight">האישור נשמר בהצלחה במערכת!</h2>
-          <p class="text-xs md:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-            פרטי אישור ההורים והצהרת הבריאות נרשמו בהצלחה במאגר של מחלקת הנוער.
+        <div class="space-y-1">
+          <h2 class="text-base md:text-lg font-black text-slate-900 tracking-tight">צפייה באישור הורים חתום</h2>
+          <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed font-semibold">
+            מסמך זה מאושר דיגיטלית ונשמר במערכת מחלקת נוער.
           </p>
         </div>
 
-        <div class="pt-6 border-t border-slate-100 max-w-md mx-auto flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div class="pt-4 border-t border-slate-100 max-w-md mx-auto flex flex-col sm:flex-row items-center justify-center gap-3">
           <button 
             onclick="window.print()" 
-            class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-xs hover:scale-102 cursor-pointer"
+            class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-xs hover:scale-102 cursor-pointer"
           >
             <i class="fa-solid fa-file-pdf text-sm"></i>
-            <span>שמור כ-PDF / הדפס</span>
+            <span>שמור כ-PDF / הדפס אישור</span>
           </button>
           
           <button 
-            onclick="reloadParentEmptyFormAndSignAnother()" 
-            class="w-full sm:w-auto bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-extrabold text-xs px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-3xs cursor-pointer hover:border-slate-300"
+            onclick="goBackToManagerSubmissions()" 
+            class="w-full sm:w-auto bg-slate-105 hover:bg-slate-200 text-slate-800 font-extrabold text-xs px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-3xs cursor-pointer border border-slate-200"
           >
-            <i class="fa-solid fa-plus text-sm"></i>
-            <span>הגש אישור נוסף</span>
+            <i class="fa-solid fa-arrow-right text-sm"></i>
+            <span>חזור לרשימת האישורים</span>
           </button>
         </div>
       </div>
@@ -550,40 +518,49 @@
             <div id="pdf-doc-activity-badge" class="font-bold text-brand-700 text-xs"></div>
             <p class="text-[10px] text-slate-450 font-medium">מספר סימוכין חתימה: <span id="pdf-doc-id-ref" class="font-mono bg-slate-100 px-1 py-0.5 rounded"></span></p>
           </div>
-          <!-- Logo symbol -->
-          <div class="text-left">
-            <div class="inline-flex flex-col items-center">
-              <div class="w-12 h-12 rounded-xl border-2 border-slate-800 flex items-center justify-center text-slate-800 font-black text-base">נוער</div>
-              <span class="text-[9px] text-slate-400 font-bold mt-1">מזכירות מחלקת נוער</span>
+        </div>
+
+        <!-- Section 1 of PDF details of children -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5">פרטי החניך</h3>
+          <div class="grid grid-cols-3 gap-4 text-xs text-slate-800">
+            <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+              <span class="text-[10px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
+              <p class="font-bold text-slate-900 text-sm" id="pdf-child-name"></p>
+            </div>
+            <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+              <span class="text-[10px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
+              <p class="font-bold font-mono tracking-widest text-slate-900" id="pdf-child-id"></p>
+            </div>
+            <div id="pdf-child-grade-container" class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+              <span class="text-[10px] text-slate-400 font-bold block">כיתה:</span>
+              <p class="font-extrabold text-slate-900" id="pdf-child-grade"></p>
             </div>
           </div>
         </div>
 
-        <!-- Section 1 of PDF details of children -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-xs text-slate-800">
-          <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
-            <p class="font-bold text-slate-900 text-sm" id="pdf-child-name"></p>
-          </div>
-          <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
-            <p class="font-bold font-mono tracking-widest text-slate-900" id="pdf-child-id"></p>
-          </div>
-          <div id="pdf-child-grade-container" class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold block">כיתה:</span>
-            <p class="font-extrabold text-slate-900" id="pdf-child-grade"></p>
-          </div>
-          <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
-            <p class="font-bold text-slate-900 text-sm" id="pdf-parent-name"></p>
-          </div>
-          <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold block">טלפון הורה:</span>
-            <p class="font-bold font-mono tracking-wider text-slate-900" id="pdf-parent-phone"></p>
-          </div>
-          <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
-            <p class="font-bold font-mono tracking-widest text-slate-900" id="pdf-parent-id"></p>
+        <!-- Section 1.5 of PDF details of parents + Signature -->
+        <div class="space-y-3 border-t border-slate-150 pt-5">
+          <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5">פרטי ההורה וחתימה</h3>
+          <div class="grid grid-cols-4 gap-4 text-xs text-slate-800 items-stretch">
+            <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-center">
+              <span class="text-[10px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
+              <p class="font-bold text-slate-900 text-sm" id="pdf-parent-name"></p>
+            </div>
+            <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-center">
+              <span class="text-[10px] text-slate-400 font-bold block">טלפון הורה:</span>
+              <p class="font-bold font-mono tracking-wider text-slate-900" id="pdf-parent-phone"></p>
+            </div>
+            <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-center">
+              <span class="text-[10px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
+              <p class="font-bold font-mono tracking-widest text-slate-900" id="pdf-parent-id"></p>
+            </div>
+            <div class="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center col-span-1 text-center font-sans">
+              <span id="pdf-sig-label" class="text-[9px] text-slate-500 font-bold mb-1 block">חתימה:</span>
+              <div class="w-24 h-10 border border-slate-200 bg-white rounded-lg overflow-hidden flex items-center justify-center p-0.5 relative shrink-0">
+                <img id="pdf-signature-img" src="" class="max-w-full max-h-full object-contain" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -618,30 +595,10 @@
           </div>
         </div>
 
-        <!-- Footer signatures block -->
-        <div class="border-t-2 border-slate-200 pt-6 flex justify-between items-center text-xs text-slate-805">
-          <div class="space-y-1">
-            <span class="text-slate-400 font-bold block text-[10px]">תאריך חתימה:</span>
-            <p id="pdf-doc-signed-date" class="font-bold text-slate-950"></p>
-            <span class="text-slate-400 text-[10px] block mt-4">חתימה מאושרת דיגיטלית</span>
-          </div>
-          
-          <div class="text-left shrink-0">
-            <span class="text-slate-400 font-bold block text-[10px] text-center mb-1">חתימת ההורה החוקית:</span>
-            <div class="w-48 h-20 border border-slate-200 bg-slate-50/50 rounded-xl overflow-hidden flex items-center justify-center p-2 relative">
-              <img id="pdf-signature-img" src="" class="max-w-full max-h-full object-contain" />
-              <div class="absolute bottom-1 right-1 text-[8px] text-emerald-600 font-mono tracking-widest uppercase select-none opacity-40">VERIFIED</div>
-            </div>
-          </div>
-        </div>
-
       </div>
 
     </div>
-
-    <!-- Container for bulk printing (only visible when print triggering is active) -->
-    <div id="bulk-print-container" class="hidden"></div>
-
+    
   </main>
 
 
@@ -940,36 +897,22 @@
       const parentFormId = urlParams.get('id');
 
       if (parentFormId) {
-        // PARENT FILL VIEW MODE ACTIVE!
-        isParentFormFilling = true;
-        document.getElementById('view-manager').classList.add('hidden');
-        document.getElementById('view-parent-fill').classList.remove('hidden');
-        
-        const toggleBtn = document.getElementById('manager-toggle-btn');
-        if (toggleBtn) toggleBtn.classList.add('hidden');
-        
-        // Hide top site header completely for pure parental view
-        const appHeader = document.getElementById('app-header');
-        if (appHeader) appHeader.classList.add('hidden');
-
-        await loadParentFormTemplate(parentFormId);
-
-        // Configure validation change listeners
-        const form = document.getElementById('parent-approval-form');
-        if (form) {
-          form.addEventListener('input', updateParentFormButtonState);
-          form.addEventListener('change', updateParentFormButtonState);
-        }
-        updateParentFormButtonState();
-      } else {
-        // MANAGER/DASHBOARD VIEW ACTIVE
-        isParentFormFilling = false;
-        document.getElementById('view-manager').classList.remove('hidden');
-        document.getElementById('view-parent-fill').classList.add('hidden');
-        updateHeaderAuthButtonVisuals();
-        
-        await loadAllDatabaseRecords();
+        // Redirect to isolated parent approval form page
+        const origin = window.location.origin;
+        const pathname = window.location.pathname;
+        const lastSlashIdx = pathname.lastIndexOf('/');
+        const directoryPath = lastSlashIdx !== -1 ? pathname.substring(0, lastSlashIdx + 1) : '/';
+        window.location.replace(`${origin}${directoryPath}approval_form.html?id=${parentFormId}`);
+        return;
       }
+
+      // MANAGER/DASHBOARD VIEW ACTIVE
+      isParentFormFilling = false;
+      document.getElementById('view-manager').classList.remove('hidden');
+      document.getElementById('view-parent-fill').classList.add('hidden');
+      updateHeaderAuthButtonVisuals();
+      
+      await loadAllDatabaseRecords();
 
       // Pre-initialize Canvas listeners & resizing
       initSignatureCanvasEngine();
@@ -1023,6 +966,7 @@
 
     async function loadAllDatabaseRecords() {
       let success = false;
+      let loadError = '';
       
       if (supabaseClient) {
         try {
@@ -1040,18 +984,35 @@
           success = true;
 
         } catch (dbErr) {
-          console.warn("Supabase parent tables missing. Graceform fallback to local storage active.", dbErr);
+          console.error("Supabase load error:", dbErr);
           isDbConnected = false;
+          loadError = dbErr.message || dbErr;
         }
+      } else {
+        isDbConnected = false;
+        loadError = 'ספריית החיבור ל-Supabase אינה זמינה בקובץ זה.';
       }
 
+      const banner = document.getElementById('db-status-banner');
+      const message = document.getElementById('db-status-message');
+
       if (!success) {
-        // Fallback to localStorage gracefully
         isDbConnected = false;
-        loadFromLocalStorage();
-        document.getElementById('db-status-banner').classList.remove('hidden');
+        globalTemplates = [];
+        globalSubmissions = [];
+
+        // Style and show error banner in red/rose
+        if (banner) {
+          banner.className = "bg-rose-50 border-b border-rose-100 px-4 py-1.5 text-center text-[11px] font-bold text-rose-800 no-print";
+          banner.classList.remove('hidden');
+        }
+        if (message) {
+          message.innerText = `שגיאת חיבור למסד הנתונים: ${loadError}. המערכת לא מחוברת לענן או שהטבלאות חסרות ב-Supabase!`;
+        }
       } else {
-        document.getElementById('db-status-banner').classList.add('hidden');
+        if (banner) {
+          banner.classList.add('hidden');
+        }
       }
 
       // Determine active template to display submissions
@@ -1063,26 +1024,60 @@
       renderSubmissionsList();
     }
 
-    function loadFromLocalStorage() {
-      const savedTemplates = localStorage.getItem('local_parent_approvals');
-      const savedSubmissions = localStorage.getItem('local_parent_submissions');
+    async function refreshDashboardData() {
+      const btn = document.getElementById('btn-refresh-dashboard');
+      const icon = document.getElementById('refresh-icon');
+      if (btn && btn.disabled) return;
 
-      globalTemplates = savedTemplates ? JSON.parse(savedTemplates).map(t => decodeTemplateMetadata(t)) : getInitialDummyTemplates();
-      globalSubmissions = savedSubmissions ? JSON.parse(savedSubmissions) : [];
+      if (btn) btn.disabled = true;
+      if (icon) icon.classList.add('fa-spin');
 
-      if (savedTemplates === null) {
-        // Save initial seeds
-        saveToLocalStorageOnly();
+      try {
+        await loadAllDatabaseRecords();
+        
+        // Custom lightweight toast notification using SweetAlert2
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true,
+          didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+          }
+        });
+
+        Toast.fire({
+          icon: 'success',
+          title: 'הנתונים רועננו בהצלחה!'
+        });
+      } catch (err) {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'שגיאה ברענון',
+          text: 'אירעה שגיאה בעת ניסיון רענון הנתונים ממסד הנתונים.',
+          confirmButtonColor: '#7c3aed'
+        });
+      } finally {
+        if (btn) btn.disabled = false;
+        if (icon) icon.classList.remove('fa-spin');
       }
     }
 
-    function saveToLocalStorageOnly() {
-      const encodedTemplates = globalTemplates.map(t => encodeTemplateMetadata(t));
-      localStorage.setItem('local_parent_approvals', JSON.stringify(encodedTemplates));
-      localStorage.setItem('local_parent_submissions', JSON.stringify(globalSubmissions));
-    }
-
     async function pushUpdateToDB(table, action, record, recordId = null) {
+      if (record && table === 'parent_approvals') {
+        const cleanRecord = {};
+        const allowedKeys = ['title', 'activity_name', 'show_water_clause', 'commitment_text', 'created_at', 'id'];
+        for (const key of allowedKeys) {
+          if (key in record) {
+            cleanRecord[key] = record[key];
+          }
+        }
+        record = cleanRecord;
+      }
+
       if (isDbConnected && supabaseClient) {
         try {
           if (action === 'insert') {
@@ -1099,8 +1094,11 @@
             return true;
           }
         } catch (err) {
-          console.error(`DB Write failed for table ${table}. Saving locally...`, err);
+          console.error(`DB Write failed for table ${table}.`, err);
+          throw err;
         }
+      } else {
+        throw new Error('המערכת אינה מחוברת למסד הנתונים בענן.');
       }
       return null;
     }
@@ -1135,7 +1133,9 @@
       const countB = document.getElementById('templates-count-badge');
       if (!container) return;
 
-      countB.innerText = globalTemplates.length;
+      if (countB) {
+        countB.innerText = globalTemplates.length;
+      }
 
       if (globalTemplates.length === 0) {
         container.innerHTML = `
@@ -1156,39 +1156,34 @@
         html += `
           <div 
             onclick="setActiveTemplate('${t.id}')"
-            class="p-4 transition cursor-pointer flex flex-col gap-2.5 ${isSelected ? 'bg-brand-50 border-r-4 border-brand-600' : 'hover:bg-slate-50/50'}"
+            class="p-2.5 px-3.5 transition cursor-pointer flex items-center justify-between gap-3 ${isSelected ? 'bg-brand-50 border-r-4 border-brand-600' : 'hover:bg-slate-50/50'}"
           >
-            <div>
-              <h4 class="text-xs font-extrabold text-slate-900 group-hover:text-brand-600 leading-tight">${t.activity_name}</h4>
+            <div class="flex items-center gap-1.5 min-w-0 overflow-hidden">
+              <h4 class="text-xs font-extrabold text-slate-900 group-hover:text-brand-600 leading-tight truncate flex items-center gap-1.5">
+                <span class="truncate">${t.activity_name}</span>
+                <span class="text-black font-normal shrink-0">(${subCount} חתימות)</span>
+              </h4>
             </div>
 
-            <div class="flex items-center justify-between">
-              <span class="text-[9px] text-slate-400 flex items-center gap-1">
-                <i class="fa-solid fa-signature"></i>
-                <span>${subCount} הורים חתמו</span>
-              </span>
+            <!-- Action buttons for administrators -->
+            <div class="flex items-center gap-1 z-10 no-print shrink-0" onclick="event.stopPropagation()">
+              <button 
+                onclick="copyParentFormLink('${t.id}')"
+                class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 p-1.5 rounded-lg text-xs transition"
+                title="העתק קישור להורים"
+              >
+                <i class="fa-solid fa-link text-brand-600"></i>
+              </button>
               
-              <!-- Action buttons for administrators -->
-              <div class="flex items-center gap-1 z-10 no-print" onclick="event.stopPropagation()">
+              ${isManagerAuthenticated ? `
                 <button 
-                  onclick="copyParentFormLink('${t.id}')"
-                  class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-0.5"
-                  title="העתק קישור להורים"
+                  onclick="openEditTemplateModal('${t.id}')"
+                  class="bg-white hover:bg-indigo-50 border border-slate-200 text-brand-700 p-1.5 rounded-lg text-xs transition"
+                  title="ערוך טופס"
                 >
-                  <i class="fa-solid fa-link text-brand-600"></i>
-                  <span>העתק קישור</span>
+                  <i class="fa-solid fa-pen"></i>
                 </button>
-                
-                ${isManagerAuthenticated ? `
-                  <button 
-                    onclick="openEditTemplateModal('${t.id}')"
-                    class="bg-white hover:bg-indigo-50 border border-slate-200 text-brand-700 px-2 py-1 rounded-lg text-[10px] font-bold transition"
-                    title="ערוך טופס"
-                  >
-                    <i class="fa-solid fa-pen"></i>
-                  </button>
-                ` : ''}
-              </div>
+              ` : ''}
             </div>
           </div>
         `;
@@ -1277,11 +1272,15 @@
           waterText = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 text-amber-800 border border-amber-100 mx-auto" title="אינו/ה יודע/ת לשחות (כניסה עד גובה מותניים בלבד תחת השגחה)"><i class="fa-solid fa-life-ring text-xs"></i></span>`;
         }
 
+        let displayGrade = s.child_grade + "'";
+        if (s.child_grade === 'יא') displayGrade = 'י"א';
+        if (s.child_grade === 'יב' || s.child_grade === 'יb') displayGrade = 'י"ב';
+
         html += `
           <tr class="hover:bg-slate-50/40 transition border-b border-slate-100">
             <td class="p-3 font-bold text-slate-900">${s.child_name}</td>
             <td class="p-3 font-mono text-slate-500">${s.child_national_id}</td>
-            <td class="p-3 font-semibold text-slate-600">כיתה ${s.child_grade}'</td>
+            <td class="p-3 font-semibold text-slate-600">${displayGrade}</td>
             <td class="p-3 text-slate-700 font-medium">${s.parent_name}</td>
             <td class="p-3 font-mono text-slate-650">${s.parent_phone}</td>
             <td class="p-3">
@@ -1672,8 +1671,9 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       document.getElementById('pdf-commitment-terms-block').innerText = parentFormTemplateObj.commitment_text;
 
       // Signing Date and Signature preview block
-      const dateOption = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-      document.getElementById('pdf-doc-signed-date').innerText = new Date(subObj.created_at).toLocaleDateString('he-IL', dateOption);
+      const d = new Date(subObj.created_at);
+      const rawDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      document.getElementById('pdf-sig-label').innerText = `חתימה ${rawDate}:`;
       document.getElementById('pdf-signature-img').src = subObj.signature_svg;
 
       // Toggle views
@@ -1771,8 +1771,8 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
 
       // Scaled coordinates mapping correctly regardless of styling width
       return {
-        x: (clientX - rect.left) * (canvas.width / rect.width),
-        y: (clientY - rect.top) * (canvas.height / rect.height)
+        x: clientX - rect.left,
+        y: clientY - rect.top
       };
     }
 
@@ -1914,16 +1914,26 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
     // ==========================================
     function copyParentFormLink(templateId) {
       // Form absolute deployment link URL
-      const currentURL = window.location.origin + window.location.pathname;
-      const shareLink = `${currentURL}?id=${templateId}`;
+      const origin = window.location.origin;
+      const pathname = window.location.pathname;
+      const lastSlashIdx = pathname.lastIndexOf('/');
+      const directoryPath = lastSlashIdx !== -1 ? pathname.substring(0, lastSlashIdx + 1) : '/';
+      const shareLink = `${origin}${directoryPath}approval_form.html?id=${templateId}`;
 
       navigator.clipboard.writeText(shareLink).then(() => {
         Swal.fire({
           icon: 'success',
           title: 'הקישור הועתק כעת!',
           html: `<div class="text-xs font-bold leading-normal mb-1">קישור מותאם ישירות לפלאפון של ההורים עבור הפעילות:</div><input type="text" readonly class="w-full border p-2 text-[10px] text-center bg-slate-50 font-mono focus:outline-none rounded-lg" value="${shareLink}">`,
-          confirmButtonText: 'מעולה',
-          confirmButtonColor: '#7c3aed'
+          showCancelButton: true,
+          confirmButtonText: 'פתיחת הקישור',
+          cancelButtonText: 'סגור',
+          confirmButtonColor: '#7c3aed',
+          cancelButtonColor: '#64748b'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.open(shareLink, '_blank');
+          }
         });
       }).catch(err => {
         console.error(err);
@@ -2101,47 +2111,51 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
 
       Swal.showLoading();
 
-      if (modalId) {
-        // Edit Mode Update
-        const targetIdx = globalTemplates.findIndex(t => t.id === modalId);
-        if (targetIdx !== -1) {
-          // Omit immutable key for update payload
-          const updateObj = { ...encodedRecord };
-          delete updateObj.created_at;
+      try {
+        if (modalId) {
+          // Edit Mode Update
+          const targetIdx = globalTemplates.findIndex(t => t.id === modalId);
+          if (targetIdx !== -1) {
+            // Omit immutable key for update payload
+            const updateObj = { ...encodedRecord };
+            delete updateObj.created_at;
 
-          globalTemplates[targetIdx] = { ...globalTemplates[targetIdx], ...decodedRecord };
-          await pushUpdateToDB('parent_approvals', 'update', updateObj, modalId);
-        }
-      } else {
-        // Add Mode Insert
-        const tempIdLoc = 'template-' + Math.random().toString(36).substr(2, 9);
-        const recordToPush = { ...decodedRecord, id: tempIdLoc };
-        
-        let dbSaved = null;
-        if (isDbConnected) {
-          const cloudPayload = { ...encodedRecord };
-          dbSaved = await pushUpdateToDB('parent_approvals', 'insert', cloudPayload);
-        }
-
-        if (dbSaved) {
-          globalTemplates.unshift(dbSaved);
-          activeTemplateId = dbSaved.id;
+            await pushUpdateToDB('parent_approvals', 'update', updateObj, modalId);
+            globalTemplates[targetIdx] = { ...globalTemplates[targetIdx], ...decodedRecord };
+          }
         } else {
-          globalTemplates.unshift(recordToPush);
-          activeTemplateId = tempIdLoc;
+          // Add Mode Insert
+          const cloudPayload = { ...encodedRecord };
+          const dbSaved = await pushUpdateToDB('parent_approvals', 'insert', cloudPayload);
+
+          if (dbSaved) {
+            globalTemplates.unshift(dbSaved);
+            activeTemplateId = dbSaved.id;
+          } else {
+            throw new Error('לא התקבלו נתוני תבנית תקינים ממסד הנתונים.');
+          }
         }
-      }
 
-      if (!isDbConnected) {
-        saveToLocalStorageOnly();
+        Swal.close();
+        closeAddTemplateModal();
+        
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'נשמר בהצלחה!', 
+          text: 'תבנית מסמך אישור ההורים לפעילות מעודכנת והופצה בקישורים.', 
+          confirmButtonColor: '#7c3aed' 
+        });
+        
+        loadAllDatabaseRecords();
+      } catch (err) {
+        console.error("Save template failed:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'שגיאה בשמירה',
+          text: `שמירת הטופס במסד הנתונים נכשלה: ${err.message || err}. השינויים לא נשמרו.`,
+          confirmButtonColor: '#ef4444'
+        });
       }
-
-      Swal.close();
-      closeAddTemplateModal();
-      
-      Swal.fire({ icon: 'success', title: 'נשמר בהצלחה!', text: 'תבנית מסמך אישור ההורים לפעילות מעודכנת והופצה בקישורים.', confirmButtonColor: '#7c3aed' });
-      
-      loadAllDatabaseRecords();
     }
 
     async function deleteActiveTemplate() {
@@ -2161,22 +2175,34 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       if (confirm.isConfirmed) {
         Swal.showLoading();
         
-        await pushUpdateToDB('parent_approvals', 'delete', null, modalId);
-        
-        globalTemplates = globalTemplates.filter(t => t.id !== modalId);
-        globalSubmissions = globalSubmissions.filter(s => s.approval_id !== modalId);
-        
-        if (!isDbConnected) {
-          saveToLocalStorageOnly();
-        }
+        try {
+          await pushUpdateToDB('parent_approvals', 'delete', null, modalId);
+          
+          globalTemplates = globalTemplates.filter(t => t.id !== modalId);
+          globalSubmissions = globalSubmissions.filter(s => s.approval_id !== modalId);
+          
+          if (activeTemplateId === modalId) {
+            activeTemplateId = globalTemplates.length > 0 ? globalTemplates[0].id : null;
+          }
 
-        if (activeTemplateId === modalId) {
-          activeTemplateId = globalTemplates.length > 0 ? globalTemplates[0].id : null;
+          Swal.close();
+          closeAddTemplateModal();
+          loadAllDatabaseRecords();
+          Swal.fire({ 
+            icon: 'success', 
+            title: 'נמחק בהצלחה!', 
+            text: 'הטופס נמחק לחלוטין.', 
+            confirmButtonColor: '#7c3aed' 
+          });
+        } catch (err) {
+          console.error("Delete template failed:", err);
+          Swal.fire({
+            icon: 'error',
+            title: 'שגיאה במחיקה',
+            text: `מחיקת הטופס ממסד הנתונים נכשלה: ${err.message || err}.`,
+            confirmButtonColor: '#ef4444'
+          });
         }
-
-        Swal.close();
-        closeAddTemplateModal();
-        loadAllDatabaseRecords();
       }
     }
 
@@ -2200,16 +2226,22 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       if (confirm.isConfirmed) {
         Swal.showLoading();
 
-        await pushUpdateToDB('parent_submissions', 'delete', null, subId);
-        globalSubmissions = globalSubmissions.filter(s => s.id !== subId);
+        try {
+          await pushUpdateToDB('parent_submissions', 'delete', null, subId);
+          globalSubmissions = globalSubmissions.filter(s => s.id !== subId);
 
-        if (!isDbConnected) {
-          saveToLocalStorageOnly();
+          Swal.close();
+          renderSubmissionsList();
+          showNotification('אישור הרישום נמחק בהצלחה.', 'rose');
+        } catch (err) {
+          console.error("Delete submission failed:", err);
+          Swal.fire({
+            icon: 'error',
+            title: 'שגיאה במחיקה',
+            text: `מחיקת החתימה ממסד הנתונים נכשלה: ${err.message || err}.`,
+            confirmButtonColor: '#ef4444'
+          });
         }
-
-        Swal.close();
-        renderSubmissionsList();
-        showNotification('אישור הרישום נמחק בהצלחה.', 'rose');
       }
     }
 
@@ -2339,11 +2371,14 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
           const dateOption = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
           const formattedDate = new Date(s.created_at).toLocaleDateString('he-IL', dateOption);
           
+          const d = new Date(s.created_at);
+          const rawDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+          
           const isLast = idx === subs.length - 1;
           const pageBreakClass = isLast ? '' : 'page-break';
 
           html += `
-            <div class="${pageBreakClass} bg-white p-6 md:p-10 space-y-6 relative overflow-hidden print-card" style="box-sizing: border-box; min-height: 297mm; display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="${pageBreakClass} bg-white p-6 md:p-10 space-y-6 relative overflow-hidden print-card" style="box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
               
               <div class="space-y-6 flex-1">
                 <!-- Header banner structure -->
@@ -2363,27 +2398,43 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
                 </div>
 
                 <!-- Section 1 of PDF details of children -->
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs text-slate-800">
-                  <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                    <span class="text-[9px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
-                    <p class="font-bold text-slate-900 text-xs">${s.child_name}</p>
+                <div class="space-y-3">
+                  <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי החניך</h3>
+                  <div class="grid grid-cols-3 gap-4 text-xs text-slate-800">
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                      <span class="text-[9px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
+                      <p class="font-bold text-slate-900 text-xs">${s.child_name}</p>
+                    </div>
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                      <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
+                      <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.child_national_id}</p>
+                    </div>
+                    ${gradeHtml}
                   </div>
-                  <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                    <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
-                    <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.child_national_id}</p>
-                  </div>
-                  ${gradeHtml}
-                  <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                    <span class="text-[9px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
-                    <p class="font-bold text-slate-900 text-xs">${s.parent_name}</p>
-                  </div>
-                  <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                    <span class="text-[9px] text-slate-400 font-bold block">טלפון הורה:</span>
-                    <p class="font-semibold font-mono tracking-wide text-slate-900 text-xs">${s.parent_phone}</p>
-                  </div>
-                  <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                    <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
-                    <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.parent_national_id}</p>
+                </div>
+
+                <!-- Section 1.5 of PDF details of parents + Signature -->
+                <div class="space-y-3 border-t border-slate-150 pt-4">
+                  <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי ההורה וחתימה</h3>
+                  <div class="grid grid-cols-4 gap-4 text-xs text-slate-800 items-stretch font-sans">
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                      <span class="text-[9px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
+                      <p class="font-bold text-slate-900 text-xs">${s.parent_name}</p>
+                    </div>
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                      <span class="text-[9px] text-slate-400 font-bold block">טלפון הורה:</span>
+                      <p class="font-semibold font-mono tracking-wide text-slate-900 text-xs">${s.parent_phone}</p>
+                    </div>
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                      <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
+                      <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.parent_national_id}</p>
+                    </div>
+                    <div class="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center col-span-1 text-center font-sans">
+                      <span class="text-[9px] text-slate-500 font-bold mb-1 block">חתימה ${rawDate}:</span>
+                      <div class="w-24 h-10 border border-slate-200 bg-white rounded-lg overflow-hidden flex items-center justify-center p-0.5 relative shrink-0">
+                        <img src="${s.signature_svg}" class="max-w-full max-h-full object-contain" />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -2410,23 +2461,6 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
                     <span>התחייבות ומשמעת:</span>
                   </h4>
                   <div class="text-slate-600 whitespace-pre-line leading-relaxed text-[10px] bg-slate-50/50 p-3 rounded-xl border border-slate-100">${actT.commitment_text}</div>
-                </div>
-              </div>
-
-              <!-- Footer signatures block -->
-              <div class="border-t-2 border-slate-200 pt-4 flex justify-between items-center text-xs text-slate-805 mt-4">
-                <div class="space-y-1">
-                  <span class="text-slate-400 font-bold block text-[9px]">תאריך חתימה:</span>
-                  <p class="font-bold text-slate-950">${formattedDate}</p>
-                  <span class="text-slate-400 text-[9px] block mt-2">חתימה מאושרת דיגיטלית</span>
-                </div>
-                
-                <div class="text-left shrink-0">
-                  <span class="text-slate-400 font-bold block text-[9px] text-center mb-1">חתימת ההורה החוקית:</span>
-                  <div class="w-40 h-16 border border-slate-200 bg-slate-50/50 rounded-xl overflow-hidden flex items-center justify-center p-1.5 relative">
-                    <img src="${s.signature_svg}" class="max-w-full max-h-full object-contain" />
-                    <div class="absolute bottom-1 right-1 text-[7px] text-emerald-600 font-mono tracking-widest uppercase select-none opacity-40">VERIFIED</div>
-                  </div>
                 </div>
               </div>
 
@@ -2477,5 +2511,6 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
     }
 
   </script>
+  <div id="bulk-print-container" class="hidden"></div>
 </body>
 </html>
