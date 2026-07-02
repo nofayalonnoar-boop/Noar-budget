@@ -460,23 +460,21 @@
                 <span class="block text-[11px] font-bold text-indigo-950 mb-1.5">תעריף ראשון</span>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label id="label-modal-activity-price" class="block text-[10px] text-slate-500 mb-1">תשלום להורה (₪) *</label>
+                    <label id="label-modal-activity-price" class="block text-[10px] text-slate-500 mb-1">תשלום להורה (₪)</label>
                     <input 
                       type="number" 
                       id="modal-activity-price" 
                       min="0"
-                      required
                       placeholder="0"
                       class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 transition-all"
                     />
                   </div>
                   <div>
-                    <label id="label-modal-activity-qty" class="block text-[10px] text-slate-500 mb-1">כמות משתתפים *</label>
+                    <label id="label-modal-activity-qty" class="block text-[10px] text-slate-500 mb-1">כמות משתתפים</label>
                     <input 
                       type="number" 
                       id="modal-activity-qty" 
                       min="0"
-                      required
                       placeholder="0"
                       class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 transition-all"
                     />
@@ -1104,6 +1102,7 @@
 
           // Header summary elements
           const hasExtra = (act.extra_payment_price !== undefined && act.extra_payment_qty !== undefined && act.extra_payment_price > 0 && act.extra_payment_qty > 0);
+          const hasParentFunding = (act.parent_payment_price !== undefined && act.parent_payment_qty !== undefined && act.parent_payment_price > 0 && act.parent_payment_qty > 0) || hasExtra;
           
           let parentText = '';
           if (!hasExtra) {
@@ -1181,11 +1180,13 @@
                 </div>
 
                 <!-- Collapsed values -->
-                <div class="grid grid-cols-2 gap-4 md:gap-6 text-right md:border-r md:border-dashed md:border-slate-200 md:pr-6 md:mr-4">
+                <div class="grid ${hasParentFunding ? 'grid-cols-2' : 'grid-cols-1'} gap-4 md:gap-6 text-right md:border-r md:border-dashed md:border-slate-200 md:pr-6 md:mr-4">
+                  ${hasParentFunding ? `
                   <div>
                     <span class="block text-[9px] font-bold text-slate-400 uppercase">מימון הורים</span>
                     <span class="text-[11px] font-medium text-slate-700 block mt-0.5">${parentText}</span>
                   </div>
+                  ` : ''}
                   <div>
                     <span class="block text-[9px] font-bold text-slate-400 uppercase">מימון ועדה</span>
                     <span class="text-[11px] font-medium text-slate-700 block mt-0.5">${committeeText}</span>
