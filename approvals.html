@@ -1228,6 +1228,46 @@
 
       const subs = globalSubmissions.filter(s => s.approval_id === activeTemplateId);
 
+      // Helper to sort classes in ascending order (א-יב)
+      function getGradeRank(g) {
+        if (!g) return { base: 999, number: 0 };
+        const cleaned = g.toString().trim();
+        let gradeLetter = '';
+        const match = cleaned.match(/^([א-ת]+)/);
+        if (match) {
+          gradeLetter = match[1];
+        }
+        
+        const gradeOrder = {
+          'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6,
+          'ז': 7, 'ח': 8, 'ט': 9, 'י': 10, 'יא': 11, 'יב': 12
+        };
+        
+        let base = gradeOrder[gradeLetter] || 99;
+        
+        let number = 0;
+        const numMatch = cleaned.match(/(\d+)/);
+        if (numMatch) {
+          number = parseInt(numMatch[1], 10);
+        }
+        
+        return { base, number };
+      }
+
+      // Sort by child_grade ascending
+      subs.sort((a, b) => {
+        const rankA = getGradeRank(a.child_grade);
+        const rankB = getGradeRank(b.child_grade);
+        
+        if (rankA.base !== rankB.base) {
+          return rankA.base - rankB.base;
+        }
+        if (rankA.number !== rankB.number) {
+          return rankA.number - rankB.number;
+        }
+        return (a.child_name || '').localeCompare(b.child_name || '', 'he');
+      });
+
       if (subs.length === 0) {
         tbody.innerHTML = `
           <tr>
