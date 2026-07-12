@@ -96,6 +96,22 @@
        ========================================== -->
     <div id="view-manager" class="space-y-6">
       
+      <!-- View Only Mode Header -->
+      <div id="view-only-header" class="hidden bg-gradient-to-l from-brand-600 to-indigo-700 text-white rounded-3xl p-6 lg:p-8 space-y-2 relative overflow-hidden shadow-md no-print">
+        <!-- Accent circles -->
+        <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
+        <div class="absolute right-20 -bottom-20 w-48 h-48 rounded-full bg-white/5 pointer-events-none"></div>
+        
+        <div class="flex items-center gap-2.5">
+          <span class="bg-white/20 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+            <i class="fa-solid fa-eye text-[9px]"></i>
+            <span>צפייה בלבד</span>
+          </span>
+        </div>
+        <h2 id="view-only-activity-name" class="text-lg lg:text-xl font-black tracking-tight"></h2>
+        <p class="text-xs text-brand-100 leading-normal max-w-2xl font-medium">ריכוז חתימות הורים והצהרות בריאות לפעילות זו. באפשרותך לייצא את רשימת הנרשמים, להוריד קובצי PDF או להעתיק את הרשימה לוואטסאפ.</p>
+      </div>
+      
       <!-- Top Actions Row -->
       <div class="flex items-center justify-end flex-wrap gap-3">
         <button 
@@ -107,6 +123,7 @@
           <span>רענן נתונים</span>
         </button>
         <button 
+          id="btn-add-template"
           onclick="openAddTemplateModal()" 
           class="bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer hover:scale-102"
         >
@@ -118,8 +135,8 @@
       <!-- Main Dashboard Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Left: List of Approval Forms (2 Cols) -->
-        <div class="lg:col-span-1 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden h-[fit-content]">
+        <!-- Left: List of Approval Forms (1 Col) -->
+        <div id="templates-sidebar-panel" class="lg:col-span-1 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden h-[fit-content]">
           <div class="border-b border-slate-100 p-4 bg-slate-50/50 flex items-center justify-between">
             <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <i class="fa-regular fa-folder text-brand-600"></i>
@@ -137,8 +154,8 @@
           </div>
         </div>
 
-        <!-- Right: Parent Submissions List (2 Cols) -->
-        <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col min-h-[500px]">
+        <!-- Right: Parent Submissions List (2 Cols / 3 Cols in View Only) -->
+        <div id="submissions-main-panel" class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col min-h-[500px]">
           <!-- Submissions Header Block -->
           <div class="border-b border-slate-100 p-4 bg-slate-50/50 flex items-center justify-between flex-wrap gap-2">
             <div class="space-y-0.5">
@@ -993,6 +1010,7 @@
     let supabaseClient = null;
     let isManagerAuthenticated = false;
     let isDbConnected = false;
+    let isReadOnlyMode = false;
     
     let globalTemplates = [];
     let globalSubmissions = [];
@@ -1040,6 +1058,16 @@
         const lastSlashIdx = pathname.lastIndexOf('/');
         const directoryPath = lastSlashIdx !== -1 ? pathname.substring(0, lastSlashIdx + 1) : '/';
         window.location.replace(`${origin}${directoryPath}approval_form.html?id=${parentFormId}`);
+        return;
+      }
+
+      const viewOnlyId = urlParams.get('view_only');
+      if (viewOnlyId) {
+        const origin = window.location.origin;
+        const pathname = window.location.pathname;
+        const lastSlashIdx = pathname.lastIndexOf('/');
+        const directoryPath = lastSlashIdx !== -1 ? pathname.substring(0, lastSlashIdx + 1) : '/';
+        window.location.replace(`${origin}${directoryPath}approvals_view.html?id=${viewOnlyId}`);
         return;
       }
 
@@ -1138,6 +1166,45 @@
       return copy;
     }
 
+    // ==========================================
+    // APPLY READ-ONLY VIEW MODE FOR ACTIVITY
+    // ==========================================
+    function applyReadOnlyModeUI() {
+      if (!isReadOnlyMode) return;
+
+      // 1. Hide left sidebar
+      const sidebar = document.getElementById('templates-sidebar-panel');
+      if (sidebar) sidebar.classList.add('hidden');
+
+      // 2. Make right panel full-width
+      const mainPanel = document.getElementById('submissions-main-panel');
+      if (mainPanel) {
+        mainPanel.classList.remove('lg:col-span-2');
+        mainPanel.classList.add('lg:col-span-3');
+      }
+
+      // 3. Hide the add template button
+      const addBtn = document.getElementById('btn-add-template');
+      if (addBtn) addBtn.classList.add('hidden');
+
+      // 4. Hide the manager auth toggle button if any
+      const authBtn = document.getElementById('manager-toggle-btn');
+      if (authBtn) authBtn.classList.add('hidden');
+
+      // 5. Show the beautiful view-only header
+      const header = document.getElementById('view-only-header');
+      if (header) {
+        header.classList.remove('hidden');
+        
+        // Set the activity name
+        const activeTemplate = globalTemplates.find(t => t.id === activeTemplateId);
+        const nameElem = document.getElementById('view-only-activity-name');
+        if (nameElem) {
+          nameElem.innerText = activeTemplate ? activeTemplate.activity_name : 'פעילות';
+        }
+      }
+    }
+
     async function loadAllDatabaseRecords() {
       let success = false;
       let loadError = '';
@@ -1206,6 +1273,7 @@
 
       renderTemplatesList();
       renderSubmissionsList();
+      applyReadOnlyModeUI();
     }
 
     async function refreshDashboardData() {
@@ -1357,6 +1425,14 @@
                 title="העתק קישור להורים"
               >
                 <i class="fa-solid fa-link text-brand-600"></i>
+              </button>
+              
+              <button 
+                onclick="copyReadOnlyDashboardLink('${t.id}')"
+                class="bg-white hover:bg-slate-100 border border-slate-200 text-indigo-650 p-1.5 rounded-lg text-xs transition"
+                title="העתק קישור לטבלה לצפייה בלבד"
+              >
+                <i class="fa-solid fa-eye text-indigo-600"></i>
               </button>
               
               ${isManagerAuthenticated ? `
@@ -2681,6 +2757,44 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
           html: `<div class="text-xs font-bold leading-normal mb-1">קישור מותאם ישירות לפלאפון של ההורים עבור הפעילות:</div><input type="text" readonly class="w-full border p-2 text-[10px] text-center bg-slate-50 font-mono focus:outline-none rounded-lg" value="${shareLink}">`,
           showCancelButton: true,
           confirmButtonText: 'פתיחת הקישור',
+          cancelButtonText: 'סגור',
+          confirmButtonColor: '#7c3aed',
+          cancelButtonColor: '#64748b'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.open(shareLink, '_blank');
+          }
+        });
+      }).catch(err => {
+        console.error(err);
+        Swal.fire({ icon: 'error', title: 'שגיאה', text: 'אין אפשרות להעתיק אוטומטית. אנא העתיקו מהכתובת למעלה.' });
+      });
+    }
+
+    // ==========================================
+    // COPY READ-ONLY DASHBOARD LINK FOR ACTIVITY
+    // ==========================================
+    function copyReadOnlyDashboardLink(templateId) {
+      const origin = window.location.origin;
+      const pathname = window.location.pathname;
+      const lastSlashIdx = pathname.lastIndexOf('/');
+      const directoryPath = lastSlashIdx !== -1 ? pathname.substring(0, lastSlashIdx + 1) : '/';
+      const shareLink = `${origin}${directoryPath}approvals_view.html?id=${templateId}`;
+
+      navigator.clipboard.writeText(shareLink).then(() => {
+        const t = globalTemplates.find(x => x.id === templateId);
+        const activityName = t ? t.activity_name : 'הפעילות';
+        Swal.fire({
+          icon: 'success',
+          title: 'קישור לצפייה בלבד הועתק!',
+          html: `
+            <div class="text-xs text-slate-600 leading-relaxed mb-3 text-right">
+              הקישור הבא מיועד לשיתוף לצפייה בלבד. מי שיקבל אותו יראה אך ורק את טבלת האישורים של הפעילות <strong class="text-brand-700">${escapeHtmlAttr(activityName)}</strong>, ללא גישה לשאר הפעילויות במערכת וללא אפשרות לשנות או למחוק נתונים:
+            </div>
+            <input type="text" readonly class="w-full border border-slate-200 p-2.5 text-[11px] text-center bg-slate-50 font-mono focus:outline-none rounded-xl" value="${shareLink}">
+          `,
+          showCancelButton: true,
+          confirmButtonText: 'פתיחה לבדיקה',
           cancelButtonText: 'סגור',
           confirmButtonColor: '#7c3aed',
           cancelButtonColor: '#64748b'
