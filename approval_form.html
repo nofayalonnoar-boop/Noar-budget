@@ -123,8 +123,140 @@
       <!-- Core Form card declaration -->
       <form id="parent-approval-form" onsubmit="submitParentDeclaration(event)" class="bg-white border border-slate-200 rounded-3xl p-6 lg:p-8 shadow-sm space-y-6">
         
-        <!-- Part A: Fixed Health Declarations -->
+        <!-- Part D: Fill child information (Now first!) -->
         <div class="space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="text-sm font-extrabold text-slate-900">פרטי החניך / החניכה</h3>
+            <button 
+              type="button" 
+              onclick="openQuickFillModal()" 
+              class="inline-flex items-center gap-1 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 font-extrabold text-[11px] px-2.5 py-1.5 rounded-xl transition select-none cursor-pointer hover:scale-101"
+            >
+              <i class="fa-solid fa-bolt text-brand-600 animate-pulse"></i>
+              <span>מילוי פרטים מהיר</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">שם מלא של החניך/ה *</label>
+              <input 
+                type="text" 
+                id="parent-child-name" 
+                required 
+                placeholder="לדוגמה: יונתן כהן"
+                oninput="this.value = this.value.replace(/[^A-Za-zא-ת\s]/g, '')"
+                pattern="[A-Za-zא-ת\s]+"
+                title="אנא הזינו אותיות ורווחים בלבד"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-medium"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">תעודת זהות חניך *</label>
+              <input 
+                type="text" 
+                id="parent-child-id" 
+                required 
+                maxlength="9"
+                inputmode="numeric"
+                pattern="[0-9]{9}"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                placeholder="000000000"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-850 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
+              />
+            </div>
+            <div id="parent-child-grade-container">
+              <label class="block text-xs font-bold text-slate-700 mb-1">כיתה *</label>
+              <select 
+                id="parent-child-grade" 
+                required
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-semibold"
+              >
+                <option value="" disabled selected>בחר כיתה...</option>
+                <option value="א">כיתה א'</option>
+                <option value="ב">כיתה ב'</option>
+                <option value="ג">כיתה ג'</option>
+                <option value="ד">כיתה ד'</option>
+                <option value="ה">כיתה ה'</option>
+                <option value="ו">כיתה ו'</option>
+                <option value="ז">כיתה ז'</option>
+                <option value="ח">כיתה ח'</option>
+                <option value="ט">כיתה ט'</option>
+                <option value="י">כיתה י'</option>
+                <option value="יא">כיתה י"א</option>
+                <option value="יב">כיתה י"ב</option>
+              </select>
+            </div>
+          </div>
+          <!-- Vegetarian Option (conditionally visible) -->
+          <div id="parent-vegetarian-container" class="hidden mt-4 p-3 border border-slate-200 hover:border-slate-300 rounded-xl bg-purple-50/20 transition flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="parent-vegetarian-checkbox" 
+              class="h-5 w-5 text-brand-600 border-slate-300 rounded focus:ring-brand-500 cursor-pointer"
+            />
+            <div class="space-y-0.5">
+              <label for="parent-vegetarian-checkbox" class="block text-xs font-bold text-slate-900 cursor-pointer select-none">
+                אני מעוניין/ת במנה צמחונית עבור החניך/ה
+              </label>
+              <p class="text-[10px] text-slate-500">סמנו תיבה זו רק אם החניך מעוניין במנה צמחונית בפעילות.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Part E: Fill Parent Info -->
+        <div class="space-y-4 pt-2">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <h3 class="text-sm font-extrabold text-slate-900">פרטי ההורה / האפוטרופוס המאשר</h3>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">שם מלא של ההורה *</label>
+              <input 
+                type="text" 
+                id="parent-parent-name" 
+                required 
+                placeholder="לדוגמה: שרה כהן"
+                oninput="this.value = this.value.replace(/[^A-Za-zא-ת\s]/g, '')"
+                pattern="[A-Za-zא-ת\s]+"
+                title="אנא הזינו אותיות ורווחים בלבד"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-medium"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">טלפון הורה *</label>
+              <input 
+                type="text" 
+                id="parent-parent-phone" 
+                required 
+                maxlength="10"
+                inputmode="tel"
+                pattern="05[0-9]{8}"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                placeholder="05XXXXXXXX"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">תעודת זהות הורה *</label>
+              <input 
+                type="text" 
+                id="parent-parent-id" 
+                required 
+                maxlength="9"
+                inputmode="numeric"
+                pattern="[0-9]{9}"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                placeholder="000000000"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-850 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Part A: Fixed Health Declarations -->
+        <div class="space-y-4 pt-2">
           <p class="text-xs font-black text-slate-800 leading-relaxed pt-2">
             אני, ההורה/האפוטרופוס של החניך/ה, מצהיר/ה בזאת כי:
           </p>
@@ -217,136 +349,9 @@
           </div>
         </div>
 
-        <!-- Part D: Fill child information -->
-        <div class="space-y-4 pt-2">
-          <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <span class="bg-brand-50 text-brand-700 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold">ד</span>
-            <h3 class="text-sm font-extrabold text-slate-900">פרטי החניך / החניכה</h3>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">שם מלא של החניך/ה *</label>
-              <input 
-                type="text" 
-                id="parent-child-name" 
-                required 
-                placeholder="לדוגמה: יונתן כהן"
-                oninput="this.value = this.value.replace(/[^A-Za-zא-ת\s]/g, '')"
-                pattern="[A-Za-zא-ת\s]+"
-                title="אנא הזינו אותיות ורווחים בלבד"
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-medium"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">תעודת זהות חניך *</label>
-              <input 
-                type="text" 
-                id="parent-child-id" 
-                required 
-                maxlength="9"
-                inputmode="numeric"
-                pattern="[0-9]{9}"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                placeholder="000000000"
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-850 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
-              />
-            </div>
-            <div id="parent-child-grade-container">
-              <label class="block text-xs font-bold text-slate-700 mb-1">כיתה *</label>
-              <select 
-                id="parent-child-grade" 
-                required
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-semibold"
-              >
-                <option value="" disabled selected>בחר כיתה...</option>
-                <option value="א">כיתה א'</option>
-                <option value="ב">כיתה ב'</option>
-                <option value="ג">כיתה ג'</option>
-                <option value="ד">כיתה ד'</option>
-                <option value="ה">כיתה ה'</option>
-                <option value="ו">כיתה ו'</option>
-                <option value="ז">כיתה ז'</option>
-                <option value="ח">כיתה ח'</option>
-                <option value="ט">כיתה ט'</option>
-                <option value="י">כיתה י'</option>
-                <option value="יא">כיתה י"א</option>
-                <option value="יב">כיתה י"ב</option>
-              </select>
-            </div>
-          </div>
-          <!-- Vegetarian Option (conditionally visible) -->
-          <div id="parent-vegetarian-container" class="hidden mt-4 p-3 border border-slate-200 hover:border-slate-300 rounded-xl bg-purple-50/20 transition flex items-center gap-3">
-            <input 
-              type="checkbox" 
-              id="parent-vegetarian-checkbox" 
-              class="h-5 w-5 text-brand-600 border-slate-300 rounded focus:ring-brand-500 cursor-pointer"
-            />
-            <div class="space-y-0.5">
-              <label for="parent-vegetarian-checkbox" class="block text-xs font-bold text-slate-900 cursor-pointer select-none">
-                אני מעוניין/ת במנה צמחונית עבור החניך/ה
-              </label>
-              <p class="text-[10px] text-slate-500">סמנו תיבה זו רק אם החניך מעוניין במנה צמחונית בפעילות.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Part E: Fill Parent Info -->
-        <div class="space-y-4 pt-2">
-          <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <span class="bg-brand-50 text-brand-700 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold">ה</span>
-            <h3 class="text-sm font-extrabold text-slate-900">פרטי ההורה / האפוטרופוס המאשר</h3>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">שם מלא של ההורה *</label>
-              <input 
-                type="text" 
-                id="parent-parent-name" 
-                required 
-                placeholder="לדוגמה: שרה כהן"
-                oninput="this.value = this.value.replace(/[^A-Za-zא-ת\s]/g, '')"
-                pattern="[A-Za-zא-ת\s]+"
-                title="אנא הזינו אותיות ורווחים בלבד"
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-medium"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">טלפון הורה *</label>
-              <input 
-                type="text" 
-                id="parent-parent-phone" 
-                required 
-                maxlength="10"
-                inputmode="tel"
-                pattern="05[0-9]{8}"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                placeholder="05XXXXXXXX"
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">תעודת זהות הורה *</label>
-              <input 
-                type="text" 
-                id="parent-parent-id" 
-                required 
-                maxlength="9"
-                inputmode="numeric"
-                pattern="[0-9]{9}"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                placeholder="000000000"
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-850 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
-              />
-            </div>
-          </div>
-        </div>
-
         <!-- Part F: Payment Section (Only shows if template has payment_url) -->
         <div id="parent-payment-block" class="hidden space-y-4 pt-2">
           <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <span class="bg-brand-50 text-brand-700 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold">ו</span>
             <h3 class="text-sm font-extrabold text-slate-900">תשלום והעלאת אישור</h3>
           </div>
 
@@ -398,7 +403,6 @@
         <!-- Part G: Live signature pad drawer container -->
         <div class="space-y-4 pt-2">
           <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <span class="bg-brand-50 text-brand-700 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold">ז</span>
             <h3 class="text-sm font-extrabold text-slate-900">חתימת הורה מאשר דיגיטלית *</h3>
           </div>
 
@@ -670,6 +674,67 @@
   </div>
 
   <!-- ==========================================
+      MODAL: QUICK FILL DETAILS
+     ========================================== -->
+  <div 
+    id="quick-fill-modal-backdrop" 
+    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm no-print"
+    style="direction: rtl;"
+  >
+    <div class="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-slate-200">
+      
+      <!-- Top banner -->
+      <div class="flex items-center justify-between border-b pb-3 p-4 border-slate-100 bg-slate-50">
+        <span class="text-xs font-extrabold text-slate-850 flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-brand-650 animate-pulse"></i>
+          <span>מילוי פרטים מהיר</span>
+        </span>
+        <button type="button" onclick="closeQuickFillModal()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="p-5 space-y-4 text-right">
+        <p class="text-[11px] text-slate-500 leading-relaxed">
+          מערכת מילוי מהיר מאפשרת לכם לשלוף נתוני רישום קודמים ולמלא את הטופס בלחיצה אחת. הזינו את תעודת הזהות של ההורה שביצע את הרישומים בעבר:
+        </p>
+
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-700">תעודת זהות של ההורה *</label>
+          <div class="flex gap-2">
+            <input 
+              type="text" 
+              id="quick-fill-parent-id" 
+              maxlength="9"
+              inputmode="numeric"
+              pattern="[0-9]{9}"
+              oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+              placeholder="000000000"
+              class="flex-1 rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs text-slate-850 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
+            />
+            <button 
+              type="button" 
+              onclick="searchQuickFillChildren()" 
+              class="bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1 shrink-0"
+            >
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <span>חפש ילדים</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Results container -->
+        <div id="quick-fill-results" class="space-y-2 pt-2 border-t border-slate-100">
+          <!-- Dynamically loaded previous children list -->
+          <p class="text-[10px] text-slate-400 text-center py-2">הזינו תעודת זהות ולחצו על חפש</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==========================================
       CORE SCRIPT ENGINE
      ========================================== -->
   <script>
@@ -764,6 +829,230 @@
         }
       }
       return copy;
+    }
+
+    // QUICK FILL FUNCTIONS
+    function openQuickFillModal() {
+      const backdrop = document.getElementById('quick-fill-modal-backdrop');
+      if (backdrop) backdrop.classList.remove('hidden');
+      
+      // Clear input and previous results when opening
+      const input = document.getElementById('quick-fill-parent-id');
+      if (input) input.value = '';
+      const results = document.getElementById('quick-fill-results');
+      if (results) results.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">הזינו תעודת זהות ולחצו על חפש</p>';
+    }
+
+    function closeQuickFillModal() {
+      const backdrop = document.getElementById('quick-fill-modal-backdrop');
+      if (backdrop) backdrop.classList.add('hidden');
+    }
+
+    async function searchQuickFillChildren() {
+      const parentIdInput = document.getElementById('quick-fill-parent-id').value.trim();
+      if (parentIdInput.length !== 9 || isNaN(parentIdInput)) {
+        Swal.fire({ icon: 'warning', title: 'ת.ז שגויה', text: 'אנא הזינו תעודת זהות תקינה של ההורה (9 ספרות).' });
+        return;
+      }
+      
+      const resultsContainer = document.getElementById('quick-fill-results');
+      resultsContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-6 text-slate-400 space-y-2">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-brand-600"></i>
+          <p class="text-[11px] font-bold">מחפש נרשמים בעבר...</p>
+        </div>
+      `;
+
+      let submissions = [];
+
+      // 1. Load from local storage
+      try {
+        const localS = localStorage.getItem('local_parent_submissions');
+        if (localS) {
+          const decoded = JSON.parse(localS).map(s => decodeSubmissionMetadata(s));
+          submissions = decoded.filter(s => s.parent_national_id === parentIdInput);
+        }
+      } catch (e) {
+        console.error("Local storage lookup error:", e);
+      }
+
+      // 2. Load from Supabase
+      if (window.supabase) {
+        try {
+          const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          const { data, error } = await client.from('parent_submissions').select('*').eq('parent_national_id', parentIdInput);
+          if (!error && data) {
+            const decodedData = data.map(s => decodeSubmissionMetadata(s));
+            // Merge with unique records
+            decodedData.forEach(s => {
+              if (!submissions.some(x => x.child_national_id === s.child_national_id && x.approval_id === s.approval_id)) {
+                submissions.push(s);
+              }
+            });
+          }
+        } catch (err) {
+          console.warn("Supabase lookup error:", err);
+        }
+      }
+
+      // 3. Filter out duplicates based on child_national_id (keep the latest one)
+      submissions.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      
+      const uniqueChildrenMap = new Map();
+      submissions.forEach(sub => {
+        const cid = sub.child_national_id;
+        if (cid && !uniqueChildrenMap.has(cid)) {
+          uniqueChildrenMap.set(cid, sub);
+        }
+      });
+
+      let uniqueChildren = Array.from(uniqueChildrenMap.values());
+
+      // 4. Filter out children who are already registered for THIS activity!
+      let currentActivityRegisteredIDs = [];
+      if (window.supabase && parentFormTemplateObj) {
+        try {
+          const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          const { data, error } = await client.from('parent_submissions').select('child_national_id').eq('approval_id', parentFormTemplateObj.id);
+          if (!error && data) {
+            currentActivityRegisteredIDs = data.map(x => x.child_national_id);
+          }
+        } catch (err) {
+          console.warn("Error fetching current activity submissions:", err);
+        }
+      }
+      // Check local storage for registered kids in this activity
+      try {
+        const localS = localStorage.getItem('local_parent_submissions');
+        if (localS) {
+          const decoded = JSON.parse(localS);
+          decoded.forEach(s => {
+            if (s.approval_id === parentFormTemplateObj.id && s.child_national_id) {
+              if (!currentActivityRegisteredIDs.includes(s.child_national_id)) {
+                currentActivityRegisteredIDs.push(s.child_national_id);
+              }
+            }
+          });
+        }
+      } catch (e) {}
+
+      // Filter unique children
+      const finalEligibleChildren = uniqueChildren.filter(child => {
+        return !currentActivityRegisteredIDs.includes(child.child_national_id);
+      });
+
+      if (finalEligibleChildren.length === 0) {
+        resultsContainer.innerHTML = `
+          <div class="text-center py-6 px-4 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+            <i class="fa-regular fa-face-frown text-slate-400 text-xl"></i>
+            <p class="text-xs font-bold text-slate-700">לא נמצאו חניכים מתאימים</p>
+            <p class="text-[10px] text-slate-400 leading-normal">
+              לא נמצאו חניכים רשומים בעבר לתעודת זהות זו, או שכל הילדים המשויכים להורה זה כבר רשומים לפעילות זו.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      // Display children list!
+      let html = `
+        <div class="space-y-2">
+          <p class="text-[10px] font-black text-slate-400">בחר חניך למילוי אוטומטי של הפרטים:</p>
+          <div class="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white max-h-48 overflow-y-auto">
+      `;
+
+      finalEligibleChildren.forEach((child, index) => {
+        const safeChildName = escapeHtml(child.child_name);
+        const safeChildId = escapeHtml(child.child_national_id);
+        const safeChildGrade = escapeHtml(child.child_grade || '');
+
+        html += `
+          <button 
+            type="button" 
+            onclick="applyQuickFillSelection('${index}')"
+            class="w-full text-right p-3 hover:bg-brand-50/50 flex items-center justify-between transition cursor-pointer select-none group"
+          >
+            <div class="space-y-0.5">
+              <div class="text-xs font-black text-slate-900 group-hover:text-brand-700 flex items-center gap-1">
+                <i class="fa-solid fa-user-graduate text-slate-400 text-[10px]"></i>
+                <span>${safeChildName}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 font-medium">
+                ת.ז: <span class="font-mono">${safeChildId}</span> ${safeChildGrade ? `| כיתה: ${safeChildGrade}` : ''}
+              </div>
+            </div>
+            <div class="text-[10px] bg-slate-150 text-slate-700 group-hover:bg-brand-100 group-hover:text-brand-850 px-2 py-1 rounded-md font-bold transition">
+              בחירה ומילוי <i class="fa-solid fa-chevron-left mr-0.5 text-[8px]"></i>
+            </div>
+          </button>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+
+      window.quickFillEligibleChildren = finalEligibleChildren;
+      resultsContainer.innerHTML = html;
+    }
+
+    function applyQuickFillSelection(index) {
+      const child = window.quickFillEligibleChildren[index];
+      if (!child) return;
+
+      // Set Child details
+      document.getElementById('parent-child-name').value = child.child_name || '';
+      document.getElementById('parent-child-id').value = child.child_national_id || '';
+      
+      // Grade select
+      const gradeSelect = document.getElementById('parent-child-grade');
+      if (gradeSelect) {
+        let gradeToMatch = child.child_grade || '';
+        let found = false;
+        for (let i = 0; i < gradeSelect.options.length; i++) {
+          if (gradeSelect.options[i].value === gradeToMatch) {
+            gradeSelect.value = gradeToMatch;
+            found = true;
+            break;
+          }
+        }
+        if (!found && gradeToMatch) {
+          // Try fuzzy matching (e.g. if option is "ט' בנים" and gradeToMatch is "ט")
+          for (let i = 0; i < gradeSelect.options.length; i++) {
+            const optVal = gradeSelect.options[i].value;
+            if (optVal.startsWith(gradeToMatch) || gradeToMatch.startsWith(optVal)) {
+              gradeSelect.value = optVal;
+              found = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // Set Parent details
+      document.getElementById('parent-parent-name').value = child.parent_name || '';
+      document.getElementById('parent-parent-phone').value = child.parent_phone || '';
+      document.getElementById('parent-parent-id').value = child.parent_national_id || '';
+
+      closeQuickFillModal();
+
+      // Highlight fields briefly for awesome UX!
+      const fields = [
+        'parent-child-name', 'parent-child-id', 'parent-child-grade',
+        'parent-parent-name', 'parent-parent-phone', 'parent-parent-id'
+      ];
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.add('ring-2', 'ring-brand-500/20', 'bg-brand-50/10');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-brand-500/20', 'bg-brand-50/10');
+          }, 1000);
+        }
+      });
+
+      updateParentFormButtonState();
     }
 
     function getInitialDummyTemplates() {
