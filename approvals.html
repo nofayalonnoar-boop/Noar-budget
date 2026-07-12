@@ -168,6 +168,27 @@
                 <i class="fa-solid fa-file-excel text-emerald-600"></i>
                 <span>ייצוא קובץ Excel / CSV</span>
               </button>
+
+              <button 
+                id="btn-export-text" 
+                onclick="exportSubmissionsText()" 
+                class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-[11px] px-3 py-1.5 rounded-xl transition flex items-center gap-1 drop-shadow-3xs shrink-0"
+                disabled
+              >
+                <i class="fa-solid fa-copy text-indigo-600"></i>
+                <span>ייצוא לטקסט (לוואטסאפ)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submissions Summary Bar -->
+          <div id="submissions-summary-container" class="bg-brand-50/40 border-b border-slate-100 p-3.5 px-4 hidden">
+            <div class="text-[11px] font-black text-slate-500 mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-pie text-brand-600"></i>
+              <span>סיכום אישורי הגעה לפי כיתות:</span>
+            </div>
+            <div id="submissions-summary-pills" class="flex flex-wrap gap-1.5">
+              <!-- Dynamically populated pills -->
             </div>
           </div>
 
@@ -175,13 +196,34 @@
           <div class="flex-1 overflow-x-auto min-h-[350px]">
             <table class="w-full text-right text-xs table-auto">
               <thead>
-                <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
-                  <th class="p-3">שם החניך</th>
+                <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 select-none">
+                  <th onclick="toggleSort('created_at')" class="p-3 cursor-pointer hover:bg-slate-100/80 transition min-w-[110px]">
+                    <div class="flex items-center gap-1.5 justify-start">
+                      <span>מועד הרשמה</span>
+                      <span id="sort-icon-created_at" class="inline-flex"><i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i></span>
+                    </div>
+                  </th>
+                  <th onclick="toggleSort('child_name')" class="p-3 cursor-pointer hover:bg-slate-100/80 transition">
+                    <div class="flex items-center gap-1.5 justify-start">
+                      <span>שם החניך</span>
+                      <span id="sort-icon-child_name" class="inline-flex"><i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i></span>
+                    </div>
+                  </th>
                   <th class="p-3">ת.ז חניך</th>
-                  <th class="p-3">כיתה</th>
-                  <th class="p-3">שם ההורה</th>
+                  <th onclick="toggleSort('child_grade')" class="p-3 cursor-pointer hover:bg-slate-100/80 transition">
+                    <div class="flex items-center gap-1.5 justify-start">
+                      <span>כיתה</span>
+                      <span id="sort-icon-child_grade" class="inline-flex"><i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i></span>
+                    </div>
+                  </th>
+                  <th onclick="toggleSort('parent_name')" class="p-3 cursor-pointer hover:bg-slate-100/80 transition">
+                    <div class="flex items-center gap-1.5 justify-start">
+                      <span>שם ההורה</span>
+                      <span id="sort-icon-parent_name" class="inline-flex"><i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i></span>
+                    </div>
+                  </th>
                   <th class="p-3">טלפון הורה</th>
-                  <th class="p-3">חתימה</th>
+                  <th class="p-3 text-center">חתימה</th>
                   <th class="p-3 text-center">הצהרת בריאות</th>
                   <th class="p-3 text-center">פעילות מים</th>
                   <th class="p-3 text-center">פעולות</th>
@@ -190,7 +232,7 @@
               <tbody id="submissions-table-body" class="divide-y divide-slate-100">
                 <!-- Dynamically Rendered -->
                 <tr>
-                  <td colspan="9" class="p-12 text-center text-slate-400">
+                  <td colspan="10" class="p-12 text-center text-slate-400">
                     <i class="fa-solid fa-magnifying-glass text-3xl mb-2 text-slate-300"></i>
                     <p class="text-xs font-semibold">לא נבחרה פעילות או שאין אישורי חתימות</p>
                     <p class="text-[10px] text-slate-400 mt-1">אנא לחץ על אחד מאישורי ההורים בפאנל הימני לצפייה בפרטים.</p>
@@ -736,6 +778,60 @@
           </div>
         </div>
 
+        <!-- Vegetarian Option Config block -->
+        <div class="p-4 bg-purple-50/50 border border-purple-100 rounded-xl">
+          <div class="flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="modal-template-vegetarian-toggle" 
+              class="h-5 w-5 text-brand-650 border-slate-300 rounded focus:ring-brand-500 cursor-pointer"
+            >
+            <div class="space-y-0.5">
+              <label for="modal-template-vegetarian-toggle" class="block text-xs font-bold text-slate-900 cursor-pointer select-none">
+                האם לכלול שאלה לגבי מנה צמחונית?
+              </label>
+              <p class="text-[10px] text-slate-500 leading-normal">הוספת שאלה (בחירה) להורים האם החניך/ה מעוניין/ת במנה צמחונית בטיול 🌱</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Link Config block -->
+        <div class="p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl space-y-3">
+          <div class="flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="modal-template-payment-toggle" 
+              onchange="toggleModalPaymentSection()"
+              class="h-5 w-5 text-brand-650 border-slate-300 rounded focus:ring-brand-500 cursor-pointer"
+            >
+            <div class="space-y-0.5">
+              <label for="modal-template-payment-toggle" class="block text-xs font-bold text-slate-900 cursor-pointer select-none">
+                האם הטיול כרוך בתשלום ודרישת אישור תשלום?
+              </label>
+              <p class="text-[10px] text-slate-500 leading-normal">הוספת דרישה להעלאת צילום מסך של אישור תשלום (העברת קובץ תמונה) והפניה לקישורי תשלום חיצוניים.</p>
+            </div>
+          </div>
+          
+          <div id="modal-template-payment-input-container" class="hidden pt-2 border-t border-indigo-200/50 space-y-2">
+            <!-- Hidden inputs/compatibility fields if any library references it directly -->
+            <input type="hidden" id="modal-template-payment-url" />
+            
+            <label class="block text-[10px] font-bold text-slate-700">קישורי תשלום חיצוניים (למשל: דפי תשלום, טפסי אשראי, ביט, קישורים לפי סבסוד/סניפים) *</label>
+            <div id="modal-template-payment-links-list" class="space-y-2">
+              <!-- Dynamic payment link rows added here -->
+            </div>
+            
+            <button 
+              type="button" 
+              onclick="addPaymentLinkRow('', '')" 
+              class="text-xs text-indigo-700 hover:text-indigo-950 font-bold flex items-center gap-1.5 mt-2 transition-all hover:translate-x-[-2px]"
+            >
+              <i class="fa-solid fa-circle-plus text-[11px]"></i>
+              <span>הוסף קישור תשלום נוסף</span>
+            </button>
+          </div>
+        </div>
+
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">נוסח התחייבות, משמעת וכללי התנהגות (ניתן לעריכה)</label>
           <textarea 
@@ -843,6 +939,43 @@
 
 
   <!-- ==========================================
+      MODAL: VIEW SINGLE SIGNED DOCUMENT
+     ========================================== -->
+  <div 
+    id="view-document-modal-backdrop" 
+    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm no-print"
+    style="direction: rtl;"
+  >
+    <div class="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl text-right flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b pb-3 p-4 border-slate-100 bg-slate-50/50">
+        <h3 class="text-xs font-black text-slate-850 flex items-center gap-1.5 font-sans">
+          <i class="fa-solid fa-file-invoice text-brand-600 text-sm"></i>
+          <span>טופס אישור הורים חתום ומאושר</span>
+        </h3>
+        <div class="flex items-center gap-2">
+          <button 
+            onclick="printSingleDocumentFromModal()" 
+            class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer hover:scale-101"
+          >
+            <i class="fa-solid fa-print"></i>
+            <span>הדפס אישור</span>
+          </button>
+          <button onclick="closeViewDocumentModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg border border-transparent hover:border-slate-200 bg-white transition cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Content (Scrollable) -->
+      <div class="overflow-y-auto flex-1 p-6 md:p-8 space-y-6" id="view-document-modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==========================================
       FOOTER (Hidden in print) - Removed
      ========================================== -->
 
@@ -863,6 +996,10 @@
     
     let globalTemplates = [];
     let globalSubmissions = [];
+
+    // Sorting States
+    let currentSortColumn = 'created_at'; // Default
+    let currentSortDirection = 'desc'; // Default: מהמאוחר למוקדם
     
     let activeTemplateId = null; // Currently filtered/active template in manager view
     let isParentFormFilling = false; // Flag if we are viewing the parent page
@@ -927,7 +1064,10 @@
       const copy = { ...t };
       const metadata = {
         include_grade_question: t.include_grade_question !== false,
-        grades_options: t.grades_options || ['ט', 'י', 'יא', 'יב']
+        grades_options: t.grades_options || ['ט', 'י', 'יא', 'יב'],
+        include_vegetarian_option: !!t.include_vegetarian_option,
+        payment_url: t.payment_url || '',
+        payment_urls: t.payment_urls || []
       };
       
       let rawText = t.commitment_text || '';
@@ -946,6 +1086,9 @@
       const copy = { ...t };
       copy.include_grade_question = true; 
       copy.grades_options = ['ט', 'י', 'יא', 'יב']; 
+      copy.include_vegetarian_option = false;
+      copy.payment_url = '';
+      copy.payment_urls = [];
       
       const rawText = t.commitment_text || '';
       const marker = "\n===METADATA===\n";
@@ -956,9 +1099,40 @@
           const meta = JSON.parse(jsonStr);
           copy.include_grade_question = meta.include_grade_question !== false;
           copy.grades_options = meta.grades_options || ['ט', 'י', 'יא', 'יב'];
+          copy.include_vegetarian_option = !!meta.include_vegetarian_option;
+          copy.payment_url = meta.payment_url || '';
+          copy.payment_urls = meta.payment_urls || [];
+          
+          if ((!copy.payment_urls || copy.payment_urls.length === 0) && copy.payment_url) {
+            copy.payment_urls = [{ url: copy.payment_url, description: 'קישור לתשלום' }];
+          }
+          
           copy.commitment_text = rawText.substring(0, idx);
         } catch (e) {
           console.error("Error parsing metadata, fallback to defaults.", e);
+        }
+      }
+      return copy;
+    }
+
+    function decodeSubmissionMetadata(sub) {
+      if (!sub) return sub;
+      const copy = { ...sub };
+      copy.vegetarian_choice = false;
+      copy.payment_proof_image = null;
+      
+      const rawDetails = sub.health_declaration_details || '';
+      const marker = "\n===SUB_METADATA===\n";
+      const idx = rawDetails.indexOf(marker);
+      if (idx !== -1) {
+        try {
+          const jsonStr = rawDetails.substring(idx + marker.length);
+          const meta = JSON.parse(jsonStr);
+          copy.vegetarian_choice = !!meta.vegetarian_choice;
+          copy.payment_proof_image = meta.payment_proof_image || null;
+          copy.health_declaration_details = rawDetails.substring(0, idx) || null;
+        } catch (e) {
+          console.error("Error parsing submission metadata:", e);
         }
       }
       return copy;
@@ -979,7 +1153,7 @@
           if (errS) throw errS;
 
           globalTemplates = (tmps || []).map(t => decodeTemplateMetadata(t));
-          globalSubmissions = subs || [];
+          globalSubmissions = (subs || []).map(s => decodeSubmissionMetadata(s));
           isDbConnected = true;
           success = true;
 
@@ -998,16 +1172,26 @@
 
       if (!success) {
         isDbConnected = false;
-        globalTemplates = [];
-        globalSubmissions = [];
+        
+        // Fetch local templates and submissions
+        const localT = localStorage.getItem('local_parent_approvals');
+        const localS = localStorage.getItem('local_parent_submissions');
+        
+        const decodedLocalTemplates = localT ? JSON.parse(localT).map(t => decodeTemplateMetadata(t)) : [];
+        const decodedLocalSubmissions = localS ? JSON.parse(localS).map(s => decodeSubmissionMetadata(s)) : [];
+        
+        const dummyTemplates = getInitialDummyTemplates().map(t => decodeTemplateMetadata(t));
+        
+        globalTemplates = decodedLocalTemplates.length > 0 ? decodedLocalTemplates : dummyTemplates;
+        globalSubmissions = decodedLocalSubmissions;
 
-        // Style and show error banner in red/rose
+        // Style and show error banner in amber (offline warning) instead of red/rose if we have fallback data
         if (banner) {
-          banner.className = "bg-rose-50 border-b border-rose-100 px-4 py-1.5 text-center text-[11px] font-bold text-rose-800 no-print";
+          banner.className = "bg-amber-50 border-b border-amber-100 px-4 py-1.5 text-center text-[11px] font-bold text-amber-800 no-print";
           banner.classList.remove('hidden');
         }
         if (message) {
-          message.innerText = `שגיאת חיבור למסד הנתונים: ${loadError}. המערכת לא מחוברת לענן או שהטבלאות חסרות ב-Supabase!`;
+          message.innerText = `המערכת עובדת במצב שמירה מקומית (דפדפן). לשמירה בענן, יש להקים את הטבלאות ב-Supabase.`;
         }
       } else {
         if (banner) {
@@ -1197,6 +1381,7 @@
       const containerTitle = document.getElementById('active-submissions-title');
       const containerSubtitle = document.getElementById('active-submissions-subtitle');
       const exportBtn = document.getElementById('btn-export-submissions');
+      const exportTextBtn = document.getElementById('btn-export-text');
       const printAllBtn = document.getElementById('btn-print-all-submissions');
 
       if (!tbody) return;
@@ -1214,6 +1399,7 @@
           </tr>
         `;
         if (exportBtn) exportBtn.disabled = true;
+        if (exportTextBtn) exportTextBtn.disabled = true;
         if (printAllBtn) printAllBtn.disabled = true;
         return;
       }
@@ -1227,6 +1413,26 @@
       }
 
       const subs = globalSubmissions.filter(s => s.approval_id === activeTemplateId);
+
+      const summaryContainer = document.getElementById('submissions-summary-container');
+      const summaryPills = document.getElementById('submissions-summary-pills');
+
+      if (subs.length === 0) {
+        if (summaryContainer) summaryContainer.classList.add('hidden');
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="p-12 text-center text-slate-400">
+              <i class="fa-regular fa-folder-open text-3xl mb-2 text-slate-300"></i>
+              <p class="text-xs font-extrabold text-slate-700">אין עדיין חתימות הורים לפעילות זו</p>
+              <p class="text-[10px] text-slate-450 mt-1">העתק את הקישור הציבורי בצד ימין והפץ אותו להורים על מנת שיוכלו לחתום דיגיטלית.</p>
+            </td>
+          </tr>
+        `;
+        if (exportBtn) exportBtn.disabled = true;
+        if (exportTextBtn) exportTextBtn.disabled = true;
+        if (printAllBtn) printAllBtn.disabled = true;
+        return;
+      }
 
       // Helper to sort classes in ascending order (א-יב)
       function getGradeRank(g) {
@@ -1254,36 +1460,103 @@
         return { base, number };
       }
 
-      // Sort by child_grade ascending
+      // Sort submissions based on active sorting column and direction
       subs.sort((a, b) => {
-        const rankA = getGradeRank(a.child_grade);
-        const rankB = getGradeRank(b.child_grade);
-        
-        if (rankA.base !== rankB.base) {
-          return rankA.base - rankB.base;
+        let valA = a[currentSortColumn];
+        let valB = b[currentSortColumn];
+
+        if (currentSortColumn === 'child_grade') {
+          const rankA = getGradeRank(a.child_grade);
+          const rankB = getGradeRank(b.child_grade);
+          
+          let compare = 0;
+          if (rankA.base !== rankB.base) {
+            compare = rankA.base - rankB.base;
+          } else if (rankA.number !== rankB.number) {
+            compare = rankA.number - rankB.number;
+          } else {
+            compare = (a.child_grade || '').localeCompare(b.child_grade || '', 'he');
+          }
+          if (compare === 0) {
+            compare = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+          }
+          return currentSortDirection === 'asc' ? compare : -compare;
         }
-        if (rankA.number !== rankB.number) {
-          return rankA.number - rankB.number;
+
+        if (currentSortColumn === 'created_at') {
+          const timeA = new Date(a.created_at || 0).getTime();
+          const timeB = new Date(b.created_at || 0).getTime();
+          let compare = timeA - timeB;
+          return currentSortDirection === 'asc' ? compare : -compare;
         }
-        return (a.child_name || '').localeCompare(b.child_name || '', 'he');
+
+        // String comparisons for names
+        let compare = (valA || '').toString().localeCompare((valB || '').toString(), 'he');
+        if (compare === 0) {
+          compare = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        }
+        return currentSortDirection === 'asc' ? compare : -compare;
       });
 
-      if (subs.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="9" class="p-12 text-center text-slate-400">
-              <i class="fa-regular fa-folder-open text-3xl mb-2 text-slate-300"></i>
-              <p class="text-xs font-extrabold text-slate-700">אין עדיין חתימות הורים לפעילות זו</p>
-              <p class="text-[10px] text-slate-450 mt-1">העתק את הקישור הציבורי בצד ימין והפץ אותו להורים על מנת שיוכלו לחתום דיגיטלית.</p>
-            </td>
-          </tr>
-        `;
-        if (exportBtn) exportBtn.disabled = true;
-        if (printAllBtn) printAllBtn.disabled = true;
-        return;
+      // Update Sort Icons Visuals
+      const cols = ['created_at', 'child_name', 'child_grade', 'parent_name'];
+      cols.forEach(col => {
+        const iconEl = document.getElementById(`sort-icon-${col}`);
+        if (iconEl) {
+          if (currentSortColumn === col) {
+            if (currentSortDirection === 'desc') {
+              iconEl.innerHTML = `<i class="fa-solid fa-arrow-down-wide-short text-brand-600 text-[10px]"></i>`;
+            } else {
+              iconEl.innerHTML = `<i class="fa-solid fa-arrow-up-wide-short text-brand-600 text-[10px]"></i>`;
+            }
+          } else {
+            iconEl.innerHTML = `<i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i>`;
+          }
+        }
+      });
+
+      // Render Summary Pills of signed participants per grade
+      if (summaryContainer && summaryPills) {
+        summaryContainer.classList.remove('hidden');
+        
+        const counts = {};
+        subs.forEach(s => {
+          const g = s.child_grade || 'לא מוגדר';
+          counts[g] = (counts[g] || 0) + 1;
+        });
+
+        const sortedGrades = Object.keys(counts).sort((a, b) => {
+          const rankA = getGradeRank(a);
+          const rankB = getGradeRank(b);
+          if (rankA.base !== rankB.base) {
+            return rankA.base - rankB.base;
+          }
+          if (rankA.number !== rankB.number) {
+            return rankA.number - rankB.number;
+          }
+          return a.localeCompare(b, 'he');
+        });
+
+        let pillsHtml = '';
+        sortedGrades.forEach(g => {
+          let displayG = g;
+          if (!displayG.includes('בנים') && !displayG.includes('בנות')) {
+            displayG = g + "'";
+            if (g === 'יא') displayG = 'י"א';
+            if (g === 'יב' || g === 'יb') displayG = 'י"ב';
+          }
+          pillsHtml += `
+            <div class="inline-flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1 rounded-lg text-slate-800 text-[11px] font-bold shadow-3xs">
+              <span class="text-brand-700 font-extrabold">${displayG}:</span>
+              <span class="bg-brand-100 text-brand-850 px-1.5 py-0.5 rounded-md text-[10px] font-black">${counts[g]}</span>
+            </div>
+          `;
+        });
+        summaryPills.innerHTML = pillsHtml;
       }
 
       if (exportBtn) exportBtn.disabled = false;
+      if (exportTextBtn) exportTextBtn.disabled = false;
       if (printAllBtn) printAllBtn.disabled = false;
 
       let html = '';
@@ -1312,13 +1585,31 @@
           waterText = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 text-amber-800 border border-amber-100 mx-auto" title="אינו/ה יודע/ת לשחות (כניסה עד גובה מותניים בלבד תחת השגחה)"><i class="fa-solid fa-life-ring text-xs"></i></span>`;
         }
 
-        let displayGrade = s.child_grade + "'";
-        if (s.child_grade === 'יא') displayGrade = 'י"א';
-        if (s.child_grade === 'יב' || s.child_grade === 'יb') displayGrade = 'י"ב';
+        let displayGrade = s.child_grade;
+        if (displayGrade && !displayGrade.includes('בנים') && !displayGrade.includes('בנות')) {
+          displayGrade = s.child_grade + "'";
+          if (s.child_grade === 'יא') displayGrade = 'י"א';
+          if (s.child_grade === 'יב' || s.child_grade === 'יb') displayGrade = 'י"ב';
+        }
+
+        // Format Date/Time: DD/MM HH:mm
+        const dateObj = new Date(s.created_at);
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const formattedDateTime = `${day}/${month} ${hours}:${minutes}`;
 
         html += `
           <tr class="hover:bg-slate-50/40 transition border-b border-slate-100">
-            <td class="p-3 font-bold text-slate-900">${s.child_name}</td>
+            <td class="p-3 font-mono text-slate-600 font-medium">${formattedDateTime}</td>
+            <td class="p-3 font-bold text-slate-900">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span>${s.child_name}</span>
+                ${s.vegetarian_choice ? `<span class="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-200" title="מנה צמחונית"><i class="fa-solid fa-leaf text-[9px]"></i> צמחוני</span>` : ''}
+                ${s.payment_proof_image ? `<span class="inline-flex items-center gap-0.5 bg-indigo-50 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-200 cursor-pointer" onclick="viewPaymentProofAlert('${s.child_name}', '${s.payment_proof_image}')" title="הועלה אישור תשלום (לחץ לצפייה)"><i class="fa-solid fa-receipt text-[9px]"></i> שולם</span>` : ''}
+              </div>
+            </td>
             <td class="p-3 font-mono text-slate-500">${s.child_national_id}</td>
             <td class="p-3 font-semibold text-slate-600">${displayGrade}</td>
             <td class="p-3 text-slate-700 font-medium">${s.parent_name}</td>
@@ -1368,6 +1659,33 @@
       renderSubmissionsList();
     }
 
+    function toggleSort(col) {
+      if (currentSortColumn !== col) {
+        currentSortColumn = col;
+        // For child_grade, the first click sorts ascendingly (סדר עולה) as requested, for others descendingly.
+        currentSortDirection = (col === 'child_grade') ? 'asc' : 'desc';
+      } else {
+        if (col === 'child_grade') {
+          if (currentSortDirection === 'asc') {
+            currentSortDirection = 'desc';
+          } else {
+            // Reset to default
+            currentSortColumn = 'created_at';
+            currentSortDirection = 'desc';
+          }
+        } else {
+          if (currentSortDirection === 'desc') {
+            currentSortDirection = 'asc';
+          } else {
+            // Reset to default
+            currentSortColumn = 'created_at';
+            currentSortDirection = 'desc';
+          }
+        }
+      }
+      renderSubmissionsList();
+    }
+
 
     // ==========================================
     // DIALOGS & POPUPS MANAGEMENT
@@ -1387,6 +1705,17 @@
         title: 'חתימה מאושרת דיגיטלית',
         imageUrl: base64,
         imageAlt: 'חתימת ההורה',
+        confirmButtonText: 'סגור',
+        confirmButtonColor: '#7c3aed'
+      });
+    }
+
+    function viewPaymentProofAlert(childName, base64Image) {
+      Swal.fire({
+        title: `אישור תשלום - ${childName}`,
+        imageUrl: base64Image,
+        imageAlt: `צילום מסך אישור תשלום עבור ${childName}`,
+        imageHeight: 300,
         confirmButtonText: 'סגור',
         confirmButtonColor: '#7c3aed'
       });
@@ -1500,7 +1829,12 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
             let label = g + "'";
             if (g === 'יא') label = 'י"א';
             if (g === 'יב') label = 'י"ב';
-            selectHtml.push(`<option value="${g}">כיתה ${label}</option>`);
+            
+            const labelBoys = `${label} בנים`;
+            const labelGirls = `${label} בנות`;
+            
+            selectHtml.push(`<option value="${labelBoys}">כיתה ${labelBoys}</option>`);
+            selectHtml.push(`<option value="${labelGirls}">כיתה ${labelGirls}</option>`);
           });
           gradeSelect.innerHTML = selectHtml.join('');
         }
@@ -1739,6 +2073,8 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    let currentViewingSubmission = null;
+
     function viewCompletedParentDocument(subId) {
       const sub = globalSubmissions.find(s => s.id === subId);
       if (!sub) return;
@@ -1746,8 +2082,386 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       const actT = globalTemplates.find(t => t.id === sub.approval_id);
       if (!actT) return;
 
-      parentFormTemplateObj = actT;
-      renderCompletedParentStatementHTML(sub);
+      currentViewingSubmission = sub;
+      
+      const modalBody = document.getElementById('view-document-modal-body');
+      if (!modalBody) return;
+
+      let gradeHtml = '';
+      if (actT.include_grade_question !== false) {
+        let displayG = sub.child_grade || '---';
+        if (displayG && !displayG.includes('בנים') && !displayG.includes('בנות') && displayG !== '---') {
+          displayG = sub.child_grade + "'";
+          if (sub.child_grade === 'יא') displayG = 'י"א';
+          if (sub.child_grade === 'יב' || sub.child_grade === 'יb') displayG = 'י"ב';
+        }
+        gradeHtml = `
+          <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-bold block">כיתה:</span>
+            <p class="font-extrabold text-slate-900 text-xs">${displayG}</p>
+          </div>
+        `;
+      }
+
+      let healthResult = '';
+      let healthDetailsBlock = '';
+      if (sub.health_declaration_option === 'none') {
+        healthResult = "✓ לא ידוע לי על מגבלה רפואית המונעת השתתפות מלאה.";
+      } else {
+        healthResult = "✗ מצהיר כי לחניך יש מגבלה רפואית כרונית / רגישות / אלרגיה מסכנת חיים.";
+        healthDetailsBlock = `
+          <div class="bg-rose-50 border border-rose-150 text-rose-955 p-3 rounded-xl text-xs whitespace-pre-line font-medium mt-2">
+            <span class="font-bold block text-rose-900 mb-0.5 font-sans">פירוט המגבלה הרפואית שדווחה:</span>
+            <span>${sub.health_declaration_details || 'לא צוינה'}</span>
+          </div>
+        `;
+      }
+
+      let waterHtml = '';
+      if (sub.water_declaration_option) {
+        let waterResult = '';
+        if (sub.water_declaration_option === 'can_swim') {
+          waterResult = "✓ מאשר/ת כי בני/בתי יודע/ת לשחות ומאשר/ת כניסה למים.";
+        } else {
+          waterResult = "✗ בני/בתי אינו/ה יודע/ת לשחות. רשאי/ת להיכנס עד גובה מותניים תחת השגחה.";
+        }
+        waterHtml = `
+          <div class="space-y-2 border-t border-slate-150 pt-4 font-sans">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-swimming-pool text-blue-500"></i>
+              <span>נספח אישור הצהרת פעילות מים</span>
+            </h4>
+            <p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+              על פי נהלי הבטיחות של משרד החינוך, השתתפות בפעילות מים דורשת הצהרה מפורשת של ההורה:
+              <br>
+              <span class="font-black text-slate-900 block mt-1">${waterResult}</span>
+            </p>
+          </div>
+        `;
+      }
+
+      let vegetarianHtml = '';
+      if (sub.vegetarian_choice) {
+        vegetarianHtml = `
+          <div class="space-y-1 bg-emerald-50/60 p-3 rounded-xl border border-emerald-100 col-span-3">
+            <span class="text-[10px] text-emerald-600 font-bold block">העדפה תזונתית:</span>
+            <p class="font-extrabold text-emerald-850 text-xs flex items-center gap-1">
+              <i class="fa-solid fa-seedling text-emerald-600 animate-pulse"></i>
+              <span>החניך מעוניין במנה צמחונית 🌱</span>
+            </p>
+          </div>
+        `;
+      }
+
+      let paymentProofHtml = '';
+      if (sub.payment_proof_image) {
+        paymentProofHtml = `
+          <div class="space-y-2 border-t border-slate-150 pt-4 font-sans no-print">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-receipt text-emerald-600"></i>
+              <span>צילום מסך של אישור תשלום</span>
+            </h4>
+            <p class="text-[10px] text-slate-400 mb-1">ההורה העלה צילום מסך של אישור ההעברה כהוכחת תשלום (לחץ להגדלה):</p>
+            <div class="flex justify-start">
+              <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-1.5 max-w-[300px] shadow-xs">
+                <img 
+                  src="${sub.payment_proof_image}" 
+                  class="max-h-60 w-auto object-contain rounded-lg cursor-pointer hover:scale-[1.02] transition-all" 
+                  onclick="Swal.fire({
+                    title: 'אישור תשלום - ${sub.child_name}',
+                    imageUrl: '${sub.payment_proof_image}',
+                    imageAlt: 'אישור תשלום',
+                    confirmButtonText: 'סגור',
+                    confirmButtonColor: '#7c3aed'
+                  })" 
+                />
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const refId = sub.id ? sub.id.replace('sub-', '').toUpperCase() : 'LOCAL-TEMP';
+      const d = new Date(sub.created_at);
+      const rawDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+      modalBody.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex justify-between items-start border-b-2 border-slate-200 pb-4">
+            <div class="space-y-1">
+              <h2 class="text-sm font-black text-slate-900 leading-tight">${actT.title}</h2>
+              <div class="font-bold text-brand-700 text-xs">עבור: ${actT.activity_name}</div>
+              <p class="text-[9px] text-slate-450 font-medium">מספר סימוכין חתימה: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded">${refId}</span></p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי החניך</h3>
+            <div class="grid grid-cols-3 gap-3 text-xs text-slate-800">
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                <span class="text-[9px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
+                <p class="font-bold text-slate-900 text-xs">${sub.child_name}</p>
+              </div>
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
+                <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${sub.child_national_id}</p>
+              </div>
+              ${gradeHtml}
+              ${vegetarianHtml}
+            </div>
+          </div>
+
+          <div class="space-y-3 border-t border-slate-150 pt-4">
+            <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי ההורה וחתימה</h3>
+            <div class="grid grid-cols-4 gap-3 text-xs text-slate-800 items-stretch font-sans">
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+                <span class="text-[9px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
+                <p class="font-bold text-slate-900 text-xs">${sub.parent_name}</p>
+              </div>
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+                <span class="text-[9px] text-slate-400 font-bold block">טלפון הורה:</span>
+                <p class="font-semibold font-mono tracking-wide text-slate-900 text-xs">${sub.parent_phone}</p>
+              </div>
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+                <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
+                <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${sub.parent_national_id}</p>
+              </div>
+              <div class="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center col-span-1 text-center font-sans">
+                <span class="text-[9px] text-slate-500 font-bold mb-1 block">חתימה ${rawDate}:</span>
+                <div class="w-24 h-10 border border-slate-200 bg-white rounded-lg overflow-hidden flex items-center justify-center p-0.5 relative shrink-0">
+                  <img src="${sub.signature_svg}" class="max-w-full max-h-full object-contain" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 border-t border-slate-150 pt-4">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 font-sans">
+              <i class="fa-solid fa-heart-pulse text-red-500"></i>
+              <span>הצהרת בריאות להשתתפות בטיול</span>
+            </h4>
+            <div class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+              אני, ההורה/האפוטרופוס של החניך/ה, מצהיר/ה בזאת כי:
+              <div class="font-black text-slate-900 mt-1">${healthResult}</div>
+              ${healthDetailsBlock}
+            </div>
+          </div>
+
+          ${waterHtml}
+          ${paymentProofHtml}
+
+          <div class="space-y-1.5 border-t border-slate-150 pt-4 text-xs font-sans">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-scale-balanced text-slate-600"></i>
+              <span>התחייבות ומשמעת:</span>
+            </h4>
+            <div class="text-slate-600 whitespace-pre-line leading-relaxed text-[10px] bg-slate-50/50 p-3 rounded-xl border border-slate-100">${actT.commitment_text}</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('view-document-modal-backdrop').classList.remove('hidden');
+    }
+
+    function closeViewDocumentModal() {
+      document.getElementById('view-document-modal-backdrop').classList.add('hidden');
+      currentViewingSubmission = null;
+    }
+
+    function printSingleDocumentFromModal() {
+      if (!currentViewingSubmission) return;
+      const s = currentViewingSubmission;
+      const actT = globalTemplates.find(t => t.id === s.approval_id);
+      if (!actT) return;
+
+      const bulkContainer = document.getElementById('bulk-print-container');
+      if (!bulkContainer) return;
+
+      let gradeHtml = '';
+      if (actT.include_grade_question !== false) {
+        let label = s.child_grade || '---';
+        if (label && !label.includes('בנים') && !label.includes('בנות') && label !== '---') {
+          label = s.child_grade + "'";
+          if (s.child_grade === 'יא') label = 'י"א';
+          if (s.child_grade === 'יb' || s.child_grade === 'יב') label = 'י"ב';
+        }
+        gradeHtml = `
+          <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-bold block">כיתה:</span>
+            <p class="font-extrabold text-slate-900 text-xs">${label}</p>
+          </div>
+        `;
+      }
+
+      let healthResult = '';
+      let healthDetailsBlock = '';
+      if (s.health_declaration_option === 'none') {
+        healthResult = "✓ לא ידוע לי על מגבלה רפואית המונעת השתתפות מלאה.";
+      } else {
+        healthResult = "✗ מצהיר כי לחניך יש מגבלה רפואית כרונית / רגישות / אלרגיה מסכנת חיים.";
+        healthDetailsBlock = `
+          <div class="bg-rose-50 border border-rose-150 text-rose-955 p-3 rounded-xl text-[11px] whitespace-pre-line font-medium mt-2">
+            <span class="font-bold block text-rose-900 mb-0.5">פירוט המגבלה הרפואית שדווחה:</span>
+            <span>${s.health_declaration_details || 'לא צוינה'}</span>
+          </div>
+        `;
+      }
+
+      let waterHtml = '';
+      if (s.water_declaration_option) {
+        let waterResult = '';
+        if (s.water_declaration_option === 'can_swim') {
+          waterResult = "✓ מאשר/ת כי בני/בתי יודע/ת לשחות ומאשר/ת כניסה למים.";
+        } else {
+          waterResult = "✗ בני/בתי אינו/ה יודע/ת לשחות. רשאי/ת להיכנס עד גובה מותניים תחת השגחה.";
+        }
+        waterHtml = `
+          <div class="space-y-2 border-t border-slate-150 pt-4 font-sans">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-swimming-pool text-blue-500 text-[10px]"></i>
+              <span>נספח אישור הצהרת פעילות מים</span>
+            </h4>
+            <p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+              על פי נהלי הבטיחות של משרד החינוך, השתתפות בפעילות מים דורשת הצהרה מפורשת של ההורה:
+              <br>
+              <span class="font-black text-slate-900 block mt-1">${waterResult}</span>
+            </p>
+          </div>
+        `;
+      }
+
+      let vegetarianHtml = '';
+      if (s.vegetarian_choice) {
+        vegetarianHtml = `
+          <div class="space-y-1 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100 col-span-3">
+            <span class="text-[10px] text-emerald-600 font-bold block">העדפה תזונתית:</span>
+            <p class="font-extrabold text-emerald-800 text-xs flex items-center gap-1">
+              <i class="fa-solid fa-seedling text-emerald-600"></i>
+              <span>החניך מעוניין במנה צמחונית 🌱</span>
+            </p>
+          </div>
+        `;
+      }
+
+      let paymentProofHtml = '';
+      if (s.payment_proof_image) {
+        paymentProofHtml = `
+          <div class="space-y-2 border-t border-slate-150 pt-4 font-sans" style="page-break-inside: avoid;">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-receipt text-emerald-600 text-[10px]"></i>
+              <span>צילום מסך של אישור תשלום</span>
+            </h4>
+            <div class="flex justify-start">
+              <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-1 max-w-[240px]">
+                <img src="${s.payment_proof_image}" class="max-h-48 w-auto object-contain rounded-lg" />
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const refId = s.id ? s.id.replace('sub-', '').toUpperCase() : 'LOCAL-TEMP';
+      const d = new Date(s.created_at);
+      const rawDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+      const printHtml = `
+        <div class="bg-white p-6 md:p-10 space-y-6 relative overflow-hidden print-card" style="box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; direction: rtl;">
+          <div class="space-y-6 flex-1">
+            <div class="flex justify-between items-start border-b-2 border-slate-200 pb-4">
+              <div class="space-y-1">
+                <h2 class="text-base font-black text-slate-900 border-none pb-0 leading-tight">${actT.title}</h2>
+                <div class="font-bold text-brand-700 text-xs">עבור: ${actT.activity_name}</div>
+                <p class="text-[9px] text-slate-450 font-medium">מספר סימוכין חתימה: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded">${refId}</span></p>
+              </div>
+              <div class="text-left shrink-0">
+                <div class="inline-flex flex-col items-center">
+                  <div class="w-10 h-10 rounded-xl border-2 border-slate-800 flex items-center justify-center text-slate-800 font-extrabold text-xs">נוער</div>
+                  <span class="text-[8px] text-slate-400 font-bold mt-1">מזכירות מחלקת נוער</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי החניך</h3>
+              <div class="grid grid-cols-3 gap-4 text-xs text-slate-800">
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                  <span class="text-[9px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
+                  <p class="font-bold text-slate-900 text-xs">${s.child_name}</p>
+                </div>
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                  <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
+                  <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.child_national_id}</p>
+                </div>
+                ${gradeHtml}
+                ${vegetarianHtml}
+              </div>
+            </div>
+
+            <div class="space-y-3 border-t border-slate-150 pt-4">
+              <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי ההורה וחתימה</h3>
+              <div class="grid grid-cols-4 gap-4 text-xs text-slate-800 items-stretch font-sans">
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                  <span class="text-[9px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
+                  <p class="font-bold text-slate-900 text-xs">${s.parent_name}</p>
+                </div>
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                  <span class="text-[9px] text-slate-400 font-bold block">טלפון הורה:</span>
+                  <p class="font-semibold font-mono tracking-wide text-slate-900 text-xs">${s.parent_phone}</p>
+                </div>
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                  <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
+                  <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.parent_national_id}</p>
+                </div>
+                <div class="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center col-span-1 text-center font-sans">
+                  <span class="text-[9px] text-slate-500 font-bold mb-1 block">חתימה ${rawDate}:</span>
+                  <div class="w-24 h-10 border border-slate-200 bg-white rounded-lg overflow-hidden flex items-center justify-center p-0.5 relative shrink-0">
+                    <img src="${s.signature_svg}" class="max-w-full max-h-full object-contain" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5 border-t border-slate-150 pt-4">
+              <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 font-sans">
+                <i class="fa-solid fa-heart-pulse text-red-500 text-[10px]"></i>
+                <span>הצהרת בריאות להשתתפות בטיול</span>
+              </h4>
+              <div class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+                אני, ההורה/האפוטרופוס של החניך/ה, מצהיר/ה בזאת כי:
+                <div class="font-black text-slate-900 mt-1">${healthResult}</div>
+                ${healthDetailsBlock}
+              </div>
+            </div>
+
+            ${waterHtml}
+            ${paymentProofHtml}
+
+            <div class="space-y-1.5 border-t border-slate-150 pt-4 text-xs font-sans">
+              <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-scale-balanced text-slate-600 text-[10px]"></i>
+                <span>התחייבות ומשמעת:</span>
+              </h4>
+              <div class="text-slate-600 whitespace-pre-line leading-relaxed text-[10px] bg-slate-50/50 p-3 rounded-xl border border-slate-100">${actT.commitment_text}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      bulkContainer.innerHTML = printHtml;
+      bulkContainer.classList.remove('hidden');
+      document.body.classList.add('bulk-printing');
+
+      const afterPrintHandler = () => {
+        document.body.classList.remove('bulk-printing');
+        bulkContainer.classList.add('hidden');
+        bulkContainer.innerHTML = '';
+        window.removeEventListener('afterprint', afterPrintHandler);
+      };
+      window.addEventListener('afterprint', afterPrintHandler);
+
+      setTimeout(() => {
+        window.print();
+      }, 100);
     }
 
 
@@ -2060,6 +2774,78 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       }
     }
 
+    function escapeHtmlAttr(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+    }
+
+    function addPaymentLinkRow(url = '', description = '') {
+      const container = document.getElementById('modal-template-payment-links-list');
+      if (!container) return;
+
+      const rowId = 'payment-link-row-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+      
+      const div = document.createElement('div');
+      div.id = rowId;
+      div.className = 'flex items-center gap-2 bg-slate-50/50 p-2.5 rounded-xl border border-slate-200/60 shadow-3xs';
+      div.innerHTML = `
+        <div class="flex-1 space-y-1.5">
+          <input 
+            type="text" 
+            placeholder="תיאור התשלום (למשל: מחיר מלא, חצי סבסוד, בנים, בנות)" 
+            class="payment-link-desc-input w-full rounded-lg border border-slate-200 px-3 py-1 text-[11px] text-slate-800 focus:outline-none focus:border-indigo-500 font-semibold"
+            value="${escapeHtmlAttr(description)}"
+            required
+          />
+          <input 
+            type="url" 
+            placeholder="https://example.com/pay" 
+            class="payment-link-url-input w-full rounded-lg border border-slate-200 px-3 py-1 text-[11px] text-slate-800 focus:outline-none focus:border-indigo-500 font-mono text-left"
+            dir="ltr"
+            value="${escapeHtmlAttr(url)}"
+            required
+          />
+        </div>
+        <button type="button" onclick="document.getElementById('${rowId}').remove()" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-2 rounded-xl transition shrink-0" title="מחק קישור">
+          <i class="fa-solid fa-trash-can text-sm"></i>
+        </button>
+      `;
+      container.appendChild(div);
+    }
+
+    function toggleModalPaymentSection() {
+      const toggle = document.getElementById('modal-template-payment-toggle');
+      const container = document.getElementById('modal-template-payment-input-container');
+      if (toggle && container) {
+        if (toggle.checked) {
+          container.classList.remove('hidden');
+          // Ensure there is at least one row
+          const list = document.getElementById('modal-template-payment-links-list');
+          if (list && list.children.length === 0) {
+            addPaymentLinkRow('', '');
+          }
+          document.querySelectorAll('.payment-link-url-input').forEach(i => i.required = true);
+          document.querySelectorAll('.payment-link-desc-input').forEach(i => i.required = true);
+        } else {
+          container.classList.add('hidden');
+          document.querySelectorAll('.payment-link-url-input').forEach(i => {
+            i.required = false;
+            i.value = '';
+          });
+          document.querySelectorAll('.payment-link-desc-input').forEach(i => {
+            i.required = false;
+            i.value = '';
+          });
+          const list = document.getElementById('modal-template-payment-links-list');
+          if (list) list.innerHTML = '';
+        }
+      }
+    }
+
     function openAddTemplateModal() {
       // Validate authorization
       if (!isManagerAuthenticated) {
@@ -2087,6 +2873,16 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
         chk.checked = ['ט', 'י', 'יא', 'יב'].includes(chk.value);
       });
 
+      const vegToggle = document.getElementById('modal-template-vegetarian-toggle');
+      if (vegToggle) vegToggle.checked = false;
+
+      const paymentToggle = document.getElementById('modal-template-payment-toggle');
+      if (paymentToggle) paymentToggle.checked = false;
+      
+      const list = document.getElementById('modal-template-payment-links-list');
+      if (list) list.innerHTML = '';
+      toggleModalPaymentSection();
+
       document.getElementById('template-modal-title').innerText = 'יצירת טופס אישור הורים חדש';
       document.getElementById('modal-template-delete-btn').classList.add('hidden');
 
@@ -2109,6 +2905,31 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       document.querySelectorAll('.grade-option-checkbox').forEach(chk => {
         chk.checked = t.grades_options ? t.grades_options.includes(chk.value) : false;
       });
+
+      const vegToggle = document.getElementById('modal-template-vegetarian-toggle');
+      if (vegToggle) vegToggle.checked = !!t.include_vegetarian_option;
+
+      const paymentToggle = document.getElementById('modal-template-payment-toggle');
+      const list = document.getElementById('modal-template-payment-links-list');
+      if (list) list.innerHTML = '';
+
+      if (paymentToggle) {
+        paymentToggle.checked = !!(t.payment_url || (t.payment_urls && t.payment_urls.length > 0));
+        if (paymentToggle.checked) {
+          const urlsToLoad = t.payment_urls && t.payment_urls.length > 0 
+            ? t.payment_urls 
+            : (t.payment_url ? [{ url: t.payment_url, description: 'קישור לתשלום' }] : []);
+          
+          if (urlsToLoad.length > 0) {
+            urlsToLoad.forEach(item => {
+              addPaymentLinkRow(item.url, item.description);
+            });
+          } else {
+            addPaymentLinkRow('', '');
+          }
+        }
+        toggleModalPaymentSection();
+      }
 
       document.getElementById('template-modal-title').innerText = 'עריכת טופס אישור פעילות';
       document.getElementById('modal-template-delete-btn').classList.remove('hidden');
@@ -2137,6 +2958,23 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
         });
       }
 
+      const vegVal = document.getElementById('modal-template-vegetarian-toggle').checked;
+      const paymentToggleVal = document.getElementById('modal-template-payment-toggle').checked;
+      
+      const payment_urls = [];
+      if (paymentToggleVal) {
+        const descInputs = document.querySelectorAll('.payment-link-desc-input');
+        const urlInputs = document.querySelectorAll('.payment-link-url-input');
+        for (let i = 0; i < descInputs.length; i++) {
+          const desc = descInputs[i].value.trim();
+          const url = urlInputs[i].value.trim();
+          if (url) {
+            payment_urls.push({ url, description: desc || 'קישור לתשלום' });
+          }
+        }
+      }
+      const paymentUrlVal = payment_urls.length > 0 ? payment_urls[0].url : '';
+
       const decodedRecord = {
         title: titleVal,
         activity_name: activityVal,
@@ -2144,6 +2982,9 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
         commitment_text: commitmentVal,
         include_grade_question: includeGradeVal,
         grades_options: selectedGrades,
+        include_vegetarian_option: vegVal,
+        payment_url: paymentUrlVal,
+        payment_urls: payment_urls,
         created_at: new Date().toISOString()
       };
 
@@ -2322,6 +3163,49 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       document.body.removeChild(link);
     }
 
+    function exportSubmissionsText() {
+      const actT = globalTemplates.find(t => t.id === activeTemplateId);
+      if (!actT) return;
+
+      const subs = globalSubmissions.filter(s => s.approval_id === activeTemplateId);
+      if (subs.length === 0) {
+        Swal.fire({ icon: 'warning', title: 'אין נרשמים', text: 'לא נמצאו נרשמים להעתקה.' });
+        return;
+      }
+
+      // Format list: Name - Grade
+      let textContent = `*רשימת נרשמים לפעילות: ${actT.activity_name}*\n\n`;
+      subs.forEach((s, index) => {
+        let displayGrade = s.child_grade || '';
+        if (displayGrade && !displayGrade.includes('בנים') && !displayGrade.includes('בנות')) {
+          displayGrade = s.child_grade + "'";
+          if (s.child_grade === 'יא') displayGrade = 'י"א';
+          if (s.child_grade === 'יב' || s.child_grade === 'יb') displayGrade = 'י"ב';
+        }
+        textContent += `${index + 1}. ${s.child_name} - ${displayGrade}\n`;
+      });
+
+      navigator.clipboard.writeText(textContent)
+        .then(() => {
+          Swal.fire({
+            icon: 'success',
+            title: 'הועתק בהצלחה!',
+            text: 'רשימת הנרשמים הועתקה ללוח העריכה. ניתן להדביק אותה כעת בוואטסאפ או בכל מקום אחר.',
+            confirmButtonColor: '#7c3aed',
+            timer: 3000
+          });
+        })
+        .catch(err => {
+          console.error("Failed to copy list:", err);
+          Swal.fire({
+            icon: 'error',
+            title: 'שגיאה בהעתקה',
+            text: 'לא ניתן היה להעתיק ללוח אוטומטית. אנא נסה שנית.',
+            confirmButtonColor: '#ef4444'
+          });
+        });
+    }
+
 
     // ==========================================
     // BULK MULTI-PAGE PRINT TO PDF ENGINE
@@ -2357,9 +3241,12 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
           // Parse child grade
           let gradeHtml = '';
           if (actT.include_grade_question !== false) {
-            let label = s.child_grade + "'";
-            if (s.child_grade === 'יא') label = 'י"א';
-            if (s.child_grade === 'יb' || s.child_grade === 'יב') label = 'י"ב';
+            let label = s.child_grade || '---';
+            if (label && !label.includes('בנים') && !label.includes('בנות') && label !== '---') {
+              label = s.child_grade + "'";
+              if (s.child_grade === 'יא') label = 'י"א';
+              if (s.child_grade === 'יb' || s.child_grade === 'יב') label = 'י"ב';
+            }
             gradeHtml = `
               <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
                 <span class="text-[10px] text-slate-400 font-bold block">כיתה:</span>
@@ -2407,6 +3294,36 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
             `;
           }
 
+          let vegetarianHtml = '';
+          if (s.vegetarian_choice) {
+            vegetarianHtml = `
+              <div class="space-y-1 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100 col-span-3">
+                <span class="text-[10px] text-emerald-600 font-bold block">העדפה תזונתית:</span>
+                <p class="font-extrabold text-emerald-800 text-xs flex items-center gap-1">
+                  <i class="fa-solid fa-seedling text-emerald-600"></i>
+                  <span>החניך מעוניין במנה צמחונית 🌱</span>
+                </p>
+              </div>
+            `;
+          }
+
+          let paymentProofHtml = '';
+          if (s.payment_proof_image) {
+            paymentProofHtml = `
+              <div class="space-y-2 border-t border-slate-150 pt-4 font-sans" style="page-break-inside: avoid;">
+                <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-receipt text-emerald-600 text-[10px]"></i>
+                  <span>צילום מסך של אישור תשלום</span>
+                </h4>
+                <div class="flex justify-start">
+                  <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-1 max-w-[240px]">
+                    <img src="${s.payment_proof_image}" class="max-h-48 w-auto object-contain rounded-lg" />
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
           const refId = s.id ? s.id.replace('sub-', '').toUpperCase() : 'LOCAL-TEMP';
           const dateOption = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
           const formattedDate = new Date(s.created_at).toLocaleDateString('he-IL', dateOption);
@@ -2450,6 +3367,7 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
                       <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.child_national_id}</p>
                     </div>
                     ${gradeHtml}
+                    ${vegetarianHtml}
                   </div>
                 </div>
 
@@ -2493,6 +3411,7 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
 
                 <!-- Section 3 of water statement -->
                 ${waterHtml}
+                ${paymentProofHtml}
 
                 <!-- Section 4 of commitment terms -->
                 <div class="space-y-1.5 border-t border-slate-150 pt-4 text-xs">
