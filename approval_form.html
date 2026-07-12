@@ -275,6 +275,20 @@
               </select>
             </div>
           </div>
+          <!-- Vegetarian Option (conditionally visible) -->
+          <div id="parent-vegetarian-container" class="hidden mt-4 p-3 border border-slate-200 hover:border-slate-300 rounded-xl bg-purple-50/20 transition flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="parent-vegetarian-checkbox" 
+              class="h-5 w-5 text-brand-600 border-slate-300 rounded focus:ring-brand-500 cursor-pointer"
+            />
+            <div class="space-y-0.5">
+              <label for="parent-vegetarian-checkbox" class="block text-xs font-bold text-slate-900 cursor-pointer select-none">
+                אני מעוניין/ת במנה צמחונית עבור החניך/ה
+              </label>
+              <p class="text-[10px] text-slate-500">סמנו תיבה זו רק אם החניך מעוניין במנה צמחונית בפעילות.</p>
+            </div>
+          </div>
         </div>
 
         <!-- Part E: Fill Parent Info -->
@@ -329,10 +343,62 @@
           </div>
         </div>
 
-        <!-- Part F: Live signature pad drawer container -->
-        <div class="space-y-4 pt-2">
+        <!-- Part F: Payment Section (Only shows if template has payment_url) -->
+        <div id="parent-payment-block" class="hidden space-y-4 pt-2">
           <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
             <span class="bg-brand-50 text-brand-700 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold">ו</span>
+            <h3 class="text-sm font-extrabold text-slate-900">תשלום והעלאת אישור</h3>
+          </div>
+
+          <!-- Backward compatibility anchor so code referencing parent-payment-anchor-link doesn't fail -->
+          <a id="parent-payment-anchor-link" href="#" target="_blank" class="hidden"></a>
+
+          <div id="parent-payment-links-container" class="space-y-3">
+            <!-- Dynamic payment links with descriptions will be loaded here -->
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-700">שימו לב, יש להעלות צילום מסך של אישור התשלום *</label>
+            <div class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 hover:border-brand-400 bg-slate-50/50 rounded-2xl transition relative" id="payment-upload-dropzone">
+              <input 
+                type="file" 
+                id="parent-payment-file-input" 
+                accept="image/*" 
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              
+              <!-- State 1: Empty -->
+              <div id="upload-state-empty" class="text-center space-y-2 pointer-events-none">
+                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400"></i>
+                <p class="text-xs font-bold text-slate-700">לחצו או גררו לכאן את צילום מסך התשלום</p>
+                <p class="text-[10px] text-slate-400">תומך בקבצי תמונה (JPEG, PNG). הקובץ יידחס אוטומטית במכשיר ל-200KB.</p>
+              </div>
+
+              <!-- State 2: Uploaded/Compressed Preview -->
+              <div id="upload-state-preview" class="hidden text-center space-y-3 w-full relative z-10">
+                <div class="relative inline-block mx-auto">
+                  <img id="payment-screenshot-preview-img" src="" class="max-h-40 rounded-lg shadow-sm border border-slate-200 object-contain mx-auto" />
+                  <button 
+                    type="button" 
+                    id="btn-remove-payment-screenshot"
+                    class="absolute -top-2.5 -left-2.5 bg-rose-600 hover:bg-rose-700 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md transition cursor-pointer"
+                  >
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                  </button>
+                </div>
+                <div class="text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-1">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span>הקובץ נטען ונדחס בהצלחה! גודל: <span id="payment-compressed-size">0</span>KB</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Part G: Live signature pad drawer container -->
+        <div class="space-y-4 pt-2">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <span class="bg-brand-50 text-brand-700 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold">ז</span>
             <h3 class="text-sm font-extrabold text-slate-900">חתימת הורה מאשר דיגיטלית *</h3>
           </div>
 
@@ -500,6 +566,33 @@
           </p>
         </div>
 
+        <!-- Section 3.5: Vegetarian Meal & Payment (PDF/Receipt) -->
+        <div id="pdf-extra-metadata-block" class="hidden space-y-4 border-t border-slate-150 pt-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Vegetarian Meal Choice -->
+            <div id="pdf-vegetarian-choice-block" class="hidden space-y-2">
+              <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-utensils text-purple-600 text-[11px]"></i>
+                <span>בקשת מנה צמחונית:</span>
+              </h4>
+              <div class="text-xs text-slate-800 bg-purple-50/40 p-3 rounded-lg border border-purple-100 font-bold">
+                ✓ החניך מעוניין במנה צמחונית בפעילות זו.
+              </div>
+            </div>
+
+            <!-- Payment Proof Section -->
+            <div id="pdf-payment-proof-block" class="hidden space-y-2 col-span-1 md:col-span-2">
+              <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-receipt text-indigo-600 text-[11px]"></i>
+                <span>אישור תשלום מצורף:</span>
+              </h4>
+              <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-2 text-center max-w-sm">
+                <img id="pdf-payment-proof-img" src="" class="max-h-56 rounded-lg object-contain mx-auto shadow-3xs" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Section 4 of commitment terms -->
         <div class="space-y-2 border-t border-slate-150 pt-5 text-xs">
           <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5"><i class="fa-solid fa-scale-balanced text-slate-600"></i><span>התחייבות ומשמעת:</span></h4>
@@ -588,6 +681,7 @@
 
     let parentFormTemplateObj = null; 
     let temporarySignatureBase64 = null; 
+    let compressedPaymentImageBase64 = null; // Stored locally compressed payment confirmation
     
     // Canvas variables
     let canvas, ctx;
@@ -599,6 +693,11 @@
     function decodeTemplateMetadata(t) {
       if (!t) return t;
       const copy = { ...t };
+      copy.include_grade_question = true;
+      copy.grades_options = ['ט', 'י', 'יא', 'יב'];
+      copy.include_vegetarian_option = false;
+      copy.payment_url = '';
+      copy.payment_urls = [];
       
       const text = t.commitment_text || '';
       const marker = "\n===METADATA===\n";
@@ -611,12 +710,58 @@
           const parsed = JSON.parse(rawMeta);
           copy.include_grade_question = parsed.include_grade_question !== false;
           copy.grades_options = parsed.grades_options || ['ט', 'י', 'יא', 'יב'];
+          copy.include_vegetarian_option = !!parsed.include_vegetarian_option;
+          copy.payment_url = parsed.payment_url || '';
+          copy.payment_urls = parsed.payment_urls || [];
+          
+          if ((!copy.payment_urls || copy.payment_urls.length === 0) && copy.payment_url) {
+            copy.payment_urls = [{ url: copy.payment_url, description: 'קישור לתשלום בפעילות' }];
+          }
         } catch (e) {
           console.warn("Could not parse metadata from commitment tail:", e);
         }
-      } else {
-        copy.include_grade_question = true;
-        copy.grades_options = ['ט', 'י', 'יא', 'יב'];
+      }
+      return copy;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+    }
+
+    function encodeSubmissionMetadata(sub) {
+      const metadata = {
+        vegetarian_choice: !!sub.vegetarian_choice,
+        payment_proof_image: sub.payment_proof_image || null
+      };
+      const baseDetails = sub.health_declaration_details || '';
+      return baseDetails + "\n===SUB_METADATA===\n" + JSON.stringify(metadata);
+    }
+
+    function decodeSubmissionMetadata(sub) {
+      if (!sub) return sub;
+      const copy = { ...sub };
+      copy.vegetarian_choice = false;
+      copy.payment_proof_image = null;
+      
+      const rawDetails = sub.health_declaration_details || '';
+      const marker = "\n===SUB_METADATA===\n";
+      const idx = rawDetails.indexOf(marker);
+      if (idx !== -1) {
+        try {
+          const jsonStr = rawDetails.substring(idx + marker.length);
+          const meta = JSON.parse(jsonStr);
+          copy.vegetarian_choice = !!meta.vegetarian_choice;
+          copy.payment_proof_image = meta.payment_proof_image || null;
+          copy.health_declaration_details = rawDetails.substring(0, idx) || null;
+        } catch (e) {
+          console.error("Error parsing submission metadata:", e);
+        }
       }
       return copy;
     }
@@ -745,7 +890,12 @@
             let label = g + "'";
             if (g === 'יא') label = 'י"א';
             if (g === 'יב') label = 'י"ב';
-            selectHtml.push(`<option value="${g}">כיתה ${label}</option>`);
+            
+            const labelBoys = `${label} בנים`;
+            const labelGirls = `${label} בנות`;
+            
+            selectHtml.push(`<option value="${labelBoys}">כיתה ${labelBoys}</option>`);
+            selectHtml.push(`<option value="${labelGirls}">כיתה ${labelGirls}</option>`);
           });
           gradeSelect.innerHTML = selectHtml.join('');
         }
@@ -759,6 +909,56 @@
       } else {
         waterClauseBlock.classList.add('hidden');
         document.querySelectorAll('input[name="water-clause"]').forEach(i => i.required = false);
+      }
+
+      // Vegetarian option checkbox visibility
+      const vegContainer = document.getElementById('parent-vegetarian-container');
+      if (vegContainer) {
+        if (activeTempl.include_vegetarian_option) {
+          vegContainer.classList.remove('hidden');
+        } else {
+          vegContainer.classList.add('hidden');
+          const vegCh = document.getElementById('parent-vegetarian-checkbox');
+          if (vegCh) vegCh.checked = false;
+        }
+      }
+
+      // Payment section visibility
+      const paymentBlock = document.getElementById('parent-payment-block');
+      const paymentLinksContainer = document.getElementById('parent-payment-links-container');
+      if (paymentBlock) {
+        const hasPayment = activeTempl.payment_url || (activeTempl.payment_urls && activeTempl.payment_urls.length > 0);
+        if (hasPayment) {
+          paymentBlock.classList.remove('hidden');
+          
+          const urlsToLoad = activeTempl.payment_urls && activeTempl.payment_urls.length > 0
+            ? activeTempl.payment_urls
+            : [{ url: activeTempl.payment_url, description: 'קישור לתשלום בפעילות' }];
+            
+          if (paymentLinksContainer) {
+            paymentLinksContainer.innerHTML = urlsToLoad.map(item => `
+              <div class="bg-indigo-50/50 border border-indigo-100 p-4 rounded-2xl">
+                <div class="flex items-start gap-2.5 text-xs font-bold text-indigo-900">
+                  <i class="fa-solid fa-credit-card mt-0.5 text-indigo-600"></i>
+                  <div class="space-y-1 overflow-hidden w-full">
+                    <span class="block text-slate-800 font-extrabold">${escapeHtml(item.description)}:</span>
+                    <a href="${escapeHtml(item.url)}" target="_blank" class="block text-brand-700 hover:text-brand-900 underline font-extrabold truncate max-w-full text-[11px] font-mono text-left" dir="ltr">${escapeHtml(item.url)}</a>
+                  </div>
+                </div>
+              </div>
+            `).join('');
+          }
+        } else {
+          paymentBlock.classList.add('hidden');
+          // Clear payment states
+          compressedPaymentImageBase64 = null;
+          const fileInput = document.getElementById('parent-payment-file-input');
+          if (fileInput) fileInput.value = '';
+          const emptyState = document.getElementById('upload-state-empty');
+          const previewState = document.getElementById('upload-state-preview');
+          if (emptyState) emptyState.classList.remove('hidden');
+          if (previewState) previewState.classList.add('hidden');
+        }
       }
     }
 
@@ -777,6 +977,101 @@
         }
       }
       updateParentFormButtonState();
+    }
+
+    // Local image processing and compression to 200KB
+    function handlePaymentScreenshotUpload(file) {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        Swal.fire({ icon: 'error', title: 'קובץ לא תקין', text: 'אנא בחרו קובץ תמונה בלבד.' });
+        return;
+      }
+
+      Swal.fire({
+        title: 'מעבד ומכווץ תמונה...',
+        text: 'אנא המתינו בזמן שהתמונה עוברת דחיסה מקומית',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const maxKB = 200;
+          const maxBytes = maxKB * 1024;
+          
+          let width = img.width;
+          let height = img.height;
+          
+          // Downscale if too large to speed up compression
+          const maxDimension = 1200;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Binary search for optimal JPEG quality under 200KB
+          let low = 0.1;
+          let high = 0.95;
+          let bestBase64 = '';
+          let bestSize = Infinity;
+          
+          for (let i = 0; i < 6; i++) {
+            const mid = (low + high) / 2;
+            const testBase64 = canvas.toDataURL('image/jpeg', mid);
+            // Estimate size in bytes from base64 length
+            const sizeBytes = Math.round((testBase64.length - 814) * 0.75); // approx size
+            
+            if (sizeBytes <= maxBytes) {
+              bestBase64 = testBase64;
+              bestSize = sizeBytes;
+              low = mid; // Try higher quality
+            } else {
+              high = mid; // Must lower quality
+            }
+          }
+          
+          // Fallback if low quality is still > 200KB, downscale canvas further and try again
+          if (!bestBase64) {
+            canvas.width = width / 2;
+            canvas.height = height / 2;
+            const fallbackCtx = canvas.getContext('2d');
+            fallbackCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            bestBase64 = canvas.toDataURL('image/jpeg', 0.5);
+            bestSize = Math.round((bestBase64.length - 814) * 0.75);
+          }
+
+          compressedPaymentImageBase64 = bestBase64;
+          
+          // Update visual preview states
+          document.getElementById('payment-screenshot-preview-img').src = compressedPaymentImageBase64;
+          document.getElementById('payment-compressed-size').innerText = Math.round(bestSize / 1024);
+          document.getElementById('upload-state-empty').classList.add('hidden');
+          document.getElementById('upload-state-preview').classList.remove('hidden');
+
+          Swal.close();
+          updateParentFormButtonState();
+        };
+        img.onerror = function() {
+          Swal.fire({ icon: 'error', title: 'שגיאה', text: 'טעינת התמונה נכשלה.' });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
     // Submit declaration
@@ -824,9 +1119,22 @@
         return;
       }
 
+      // If payment is required, ensure proof is uploaded
+      if (parentFormTemplateObj.payment_url && !compressedPaymentImageBase64) {
+        Swal.fire({ icon: 'error', title: 'אישור תשלום חסר', text: 'אנא העלו צילום מסך של אישור התשלום להמשך.' });
+        return;
+      }
+
       const healthOption = healthClauseEl ? healthClauseEl.value : 'none';
       const healthDetails = document.getElementById('health-details-textarea').value.trim();
       const waterOption = (parentFormTemplateObj.show_water_clause && waterClauseEl) ? waterClauseEl.value : null;
+
+      // Extract vegetarian selection
+      const hasVeg = parentFormTemplateObj.include_vegetarian_option;
+      const vegCh = document.getElementById('parent-vegetarian-checkbox');
+      const isVegetarian = !!(hasVeg && vegCh && vegCh.checked);
+
+      const rawDetails = healthOption === 'custom' ? healthDetails : '';
 
       const newSubmission = {
         id: 'sub-' + Math.random().toString(36).substr(2, 9),
@@ -838,7 +1146,7 @@
         parent_phone: parentPhone,
         parent_national_id: parentId,
         health_declaration_option: healthOption,
-        health_declaration_details: healthOption === 'custom' ? healthDetails : null,
+        health_declaration_details: null, // Will be encoded below
         water_declaration_option: waterOption,
         signature_svg: temporarySignatureBase64,
         created_at: new Date().toISOString()
@@ -856,10 +1164,16 @@
           const cloudRecord = { ...newSubmission };
           delete cloudRecord.id;
 
+          cloudRecord.health_declaration_details = encodeSubmissionMetadata({
+            health_declaration_details: rawDetails,
+            vegetarian_choice: isVegetarian,
+            payment_proof_image: compressedPaymentImageBase64
+          });
+
           const { data, error } = await client.from('parent_submissions').insert(cloudRecord).select();
           if (error) throw error;
           if (data && data.length > 0) {
-            savedCloudRecord = data[0];
+            savedCloudRecord = decodeSubmissionMetadata(data[0]);
             success = true;
           } else {
             throw new Error("לא התקבלו נתונים חוזרים ממסד הנתונים.");
@@ -872,17 +1186,25 @@
         errorMsg = "ספריית החיבור למסד הנתונים אינה זמינה.";
       }
 
-      Swal.close();
-
+      // Offline local fallback
       if (!success) {
-        Swal.fire({
-          icon: 'error',
-          title: 'שגיאה בשמירת האישור',
-          text: `שמירת החתימה במסד הנתונים בענן נכשלה: ${errorMsg}. אנא בדקו את חיבור האינטרנט ונסו שוב.`,
-          confirmButtonColor: '#7c3aed'
+        const fallbackRecord = { ...newSubmission };
+        fallbackRecord.health_declaration_details = encodeSubmissionMetadata({
+          health_declaration_details: rawDetails,
+          vegetarian_choice: isVegetarian,
+          payment_proof_image: compressedPaymentImageBase64
         });
-        return;
+
+        const savedSubmissions = localStorage.getItem('local_parent_submissions');
+        const list = savedSubmissions ? JSON.parse(savedSubmissions) : [];
+        list.push(fallbackRecord);
+        localStorage.setItem('local_parent_submissions', JSON.stringify(list));
+
+        savedCloudRecord = decodeSubmissionMetadata(fallbackRecord);
+        success = true; // Mark as success for fallback flow transition
       }
+
+      Swal.close();
 
       // Show compiled result
       renderCompletedParentStatementHTML(savedCloudRecord);
@@ -890,6 +1212,7 @@
 
     function renderCompletedParentStatementHTML(subObj) {
       if (!subObj) return;
+      subObj = decodeSubmissionMetadata(subObj);
 
       // Populate statement elements
       document.getElementById('pdf-doc-title').innerText = parentFormTemplateObj.title;
@@ -907,9 +1230,12 @@
       } else {
         if (pdfGradeContainer) pdfGradeContainer.classList.remove('hidden');
         if (pdfGradeVal) {
-          let label = subObj.child_grade + "'";
-          if (subObj.child_grade === 'יא') label = 'י"א';
-          if (subObj.child_grade === 'יb' || subObj.child_grade === 'יב') label = 'י"ב';
+          let label = subObj.child_grade || '';
+          if (label && !label.includes('בנים') && !label.includes('בנות')) {
+            label = subObj.child_grade + "'";
+            if (subObj.child_grade === 'יא') label = 'י"א';
+            if (subObj.child_grade === 'יב') label = 'י"ב';
+          }
           pdfGradeVal.innerText = `כיתה ${label}`;
         }
       }
@@ -944,6 +1270,31 @@
         waterDocBlock.classList.add('hidden');
       }
 
+      // Extra metadata rendering (Vegetarian + Payment Proof image)
+      const extraMetaBlock = document.getElementById('pdf-extra-metadata-block');
+      const vegChoiceBlock = document.getElementById('pdf-vegetarian-choice-block');
+      const payProofBlock = document.getElementById('pdf-payment-proof-block');
+      const payProofImg = document.getElementById('pdf-payment-proof-img');
+
+      if (subObj.vegetarian_choice || subObj.payment_proof_image) {
+        if (extraMetaBlock) extraMetaBlock.classList.remove('hidden');
+        
+        if (subObj.vegetarian_choice) {
+          if (vegChoiceBlock) vegChoiceBlock.classList.remove('hidden');
+        } else {
+          if (vegChoiceBlock) vegChoiceBlock.classList.add('hidden');
+        }
+
+        if (subObj.payment_proof_image) {
+          if (payProofBlock) payProofBlock.classList.remove('hidden');
+          if (payProofImg) payProofImg.src = subObj.payment_proof_image;
+        } else {
+          if (payProofBlock) payProofBlock.classList.add('hidden');
+        }
+      } else {
+        if (extraMetaBlock) extraMetaBlock.classList.add('hidden');
+      }
+
       // Commitment
       document.getElementById('pdf-commitment-terms-block').innerText = parentFormTemplateObj.commitment_text;
 
@@ -964,9 +1315,16 @@
     function reloadParentEmptyFormAndSignAnother() {
       document.getElementById('parent-approval-form').reset();
       temporarySignatureBase64 = null;
+      compressedPaymentImageBase64 = null;
       document.getElementById('signature-preview-container').classList.add('hidden');
       document.getElementById('signature-placeholder-info').classList.remove('hidden');
       document.getElementById('health-details-container').classList.add('hidden');
+
+      // Reset payment screenshot previews
+      document.getElementById('upload-state-empty').classList.remove('hidden');
+      document.getElementById('upload-state-preview').classList.add('hidden');
+      const fileInput = document.getElementById('parent-payment-file-input');
+      if (fileInput) fileInput.value = '';
 
       // Toggle Views again
       document.getElementById('view-completed-form').classList.add('hidden');
@@ -1017,6 +1375,49 @@
 
       canvas.addEventListener('mouseup', () => isDrawing = false);
       canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+      // Wire up file upload drag & drop and change listeners for payment screenshot
+      const fileInput = document.getElementById('parent-payment-file-input');
+      const dropzone = document.getElementById('payment-upload-dropzone');
+      const removeBtn = document.getElementById('btn-remove-payment-screenshot');
+
+      if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+          if (e.target.files && e.target.files[0]) {
+            handlePaymentScreenshotUpload(e.target.files[0]);
+          }
+        });
+      }
+
+      if (dropzone) {
+        dropzone.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          dropzone.classList.add('border-brand-500', 'bg-brand-50/10');
+        });
+        dropzone.addEventListener('dragleave', function(e) {
+          e.preventDefault();
+          dropzone.classList.remove('border-brand-500', 'bg-brand-50/10');
+        });
+        dropzone.addEventListener('drop', function(e) {
+          e.preventDefault();
+          dropzone.classList.remove('border-brand-500', 'bg-brand-50/10');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handlePaymentScreenshotUpload(e.dataTransfer.files[0]);
+          }
+        });
+      }
+
+      if (removeBtn) {
+        removeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          compressedPaymentImageBase64 = null;
+          if (fileInput) fileInput.value = '';
+          document.getElementById('upload-state-empty').classList.remove('hidden');
+          document.getElementById('upload-state-preview').classList.add('hidden');
+          updateParentFormButtonState();
+        });
+      }
     }
 
     function getCanvasXY(e) {
@@ -1144,9 +1545,14 @@
 
       const isSignatureValid = !!temporarySignatureBase64;
 
+      let isPaymentValid = true;
+      if (parentFormTemplateObj && parentFormTemplateObj.payment_url) {
+        isPaymentValid = !!compressedPaymentImageBase64;
+      }
+
       const isFormFullyFilled = isChildNameValid && isChildIdValid && isGradeValid &&
                                 isParentNameValid && isPhoneValid && isParentIdValid &&
-                                isHealthValid && isWaterValid && isSignatureValid;
+                                isHealthValid && isWaterValid && isSignatureValid && isPaymentValid;
 
       if (isFormFullyFilled) {
         btn.disabled = false;
