@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>צפייה בריכוז אישורי הורים | מחלקת נוער</title>
+  
+  <!-- CDN Links -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Assistant', 'Inter', sans-serif;
+    }
+    
+    /* Print specific media rules for elegant PDF rendering */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      body.bulk-printing > :not(#bulk-print-container) {
+        display: none !important;
+      }
+      body.bulk-printing #bulk-print-container {
+        display: block !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .print-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+      .page-break {
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+    }
+  </style>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              200: '#ddd6fe',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              850: '#4c1d95',
+              900: '#2e1065',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col text-slate-800 antialiased">
+
+  <!-- DB Sync Status Banner (Hidden in print) -->
+  <div id="db-status-banner" class="bg-amber-50 border-b border-amber-100 px-4 py-1.5 text-center text-[11px] font-bold text-amber-800 no-print hidden">
+    <div class="flex items-center justify-center gap-1.5">
+      <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
+      <span id="db-status-message">המערכת עובדת במצב שמירה מקומית (דפדפן).</span>
+    </div>
+  </div>
+
+  <!-- Invalid ID / Error View -->
+  <main id="error-view" class="hidden flex-grow max-w-2xl w-full mx-auto p-6 lg:p-12 flex items-center justify-center min-h-[60vh]">
+    <div class="bg-white border border-slate-200 rounded-3xl p-8 text-center space-y-6 shadow-sm w-full">
+      <div class="w-16 h-16 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+      </div>
+      <div class="space-y-2">
+        <h2 class="text-xl font-black text-slate-900">קישור לא תקין או פג תוקף</h2>
+        <p class="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+          לא סופק מזהה פעילות תקין בקישור, או שהפעילות אינה קיימת במערכת עוד. אנא ודאו שקיבלתם את הקישור המלא ממחלקת הנוער.
+        </p>
+      </div>
+      <div>
+        <a href="index.html" class="inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition">
+          <i class="fa-solid fa-house"></i>
+          <span>חזרה לדף הבית</span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Main View -->
+  <main id="main-view" class="flex-grow max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-6">
+    
+    <!-- View Only Mode Header -->
+    <div id="view-only-header" class="bg-gradient-to-l from-brand-600 to-indigo-700 text-white rounded-3xl p-6 lg:p-8 space-y-2 relative overflow-hidden shadow-md no-print">
+      <!-- Accent circles -->
+      <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
+      <div class="absolute right-20 -bottom-20 w-48 h-48 rounded-full bg-white/5 pointer-events-none"></div>
+      
+      <div class="flex items-center gap-2.5">
+        <span class="bg-white/20 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+          <i class="fa-solid fa-eye text-[9px]"></i>
+          <span>צפייה בלבד</span>
+        </span>
+      </div>
+      <h2 id="view-only-activity-name" class="text-lg lg:text-xl font-black tracking-tight">טוען פעילות...</h2>
+      <p class="text-xs text-brand-100 leading-normal max-w-2xl font-medium">ריכוז חתימות הורים והצהרות בריאות לפעילות זו. באפשרותך לייצא את רשימת הנרשמים, להוריד קובצי PDF או להעתיק את הרשימה לוואטסאפ.</p>
+    </div>
+
+    <!-- Top Actions and Search Row -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+      <!-- Search Input -->
+      <div class="relative w-full sm:max-w-xs">
+        <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 text-xs">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </span>
+        <input 
+          type="text" 
+          id="search-input" 
+          oninput="handleSearch()"
+          placeholder="חיפוש חניך, הורה או טלפון..." 
+          class="w-full bg-white border border-slate-200 rounded-xl pr-9 pl-4 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600/20"
+        />
+      </div>
+
+      <!-- Refresh Controls -->
+      <div class="flex items-center gap-2 self-end sm:self-auto">
+        <button 
+          id="btn-refresh-dashboard"
+          onclick="refreshDashboardData()" 
+          class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i>
+          <span>רענן נתונים</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col min-h-[450px]">
+      <!-- Submissions Header Block -->
+      <div class="border-b border-slate-100 p-4 bg-slate-50/50 flex items-center justify-between flex-wrap gap-2">
+        <div class="space-y-0.5">
+          <h3 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-signature text-emerald-600"></i>
+            <span id="active-submissions-title">חתימות הורים שהתקבלו</span>
+          </h3>
+          <span id="active-submissions-subtitle" class="text-[11px] text-slate-450 block">הצג הורים חתומים שניתן לסנן ולפנות רפואית.</span>
+        </div>
+        
+        <div class="flex items-center gap-2 flex-wrap no-print">
+          <button 
+            id="btn-print-all-submissions" 
+            onclick="printAllSubmissionsPDF()" 
+            class="bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 font-bold text-[11px] px-3 py-1.5 rounded-xl transition flex items-center gap-1 drop-shadow-3xs shrink-0"
+            disabled
+          >
+            <i class="fa-solid fa-file-pdf text-brand-600"></i>
+            <span>הורדת כל האישורים (PDF רב-עמודי)</span>
+          </button>
+          
+          <button 
+            id="btn-export-submissions" 
+            onclick="exportSubmissionsCSV()" 
+            class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-[11px] px-3 py-1.5 rounded-xl transition flex items-center gap-1 drop-shadow-3xs shrink-0"
+            disabled
+          >
+            <i class="fa-solid fa-file-excel text-emerald-600"></i>
+            <span>ייצוא קובץ Excel / CSV</span>
+          </button>
+
+          <button 
+            id="btn-export-text" 
+            onclick="exportSubmissionsText()" 
+            class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-[11px] px-3 py-1.5 rounded-xl transition flex items-center gap-1 drop-shadow-3xs shrink-0"
+            disabled
+          >
+            <i class="fa-solid fa-copy text-indigo-600"></i>
+            <span>ייצוא לטקסט (לוואטסאפ)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Submissions Summary Bar -->
+      <div id="submissions-summary-container" class="bg-brand-50/40 border-b border-slate-100 p-3.5 px-4 hidden">
+        <div class="text-[11px] font-black text-slate-500 mb-1.5 flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-pie text-brand-600"></i>
+          <span>סיכום אישורי הגעה לפי כיתות:</span>
+        </div>
+        <div id="submissions-summary-pills" class="flex flex-wrap gap-1.5">
+          <!-- Dynamically populated pills -->
+        </div>
+      </div>
+
+      <!-- Main Submissions Table -->
+      <div class="flex-1 overflow-x-auto min-h-[350px]">
+        <table class="w-full text-right text-xs table-auto">
+          <thead>
+            <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 select-none">
+              <th onclick="toggleSort('created_at')" class="p-3 cursor-pointer hover:bg-slate-100/80 transition min-w-[110px]">
+                <div class="flex items-center gap-1.5 justify-start">
+                  <span>מועד הרשמה</span>
+                  <span id="sort-icon-created_at" class="inline-flex"><i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i></span>
+                </div>
+              </th>
+              <th onclick="toggleSort('child_name')" class="p-3 cursor-pointer hover:bg-slate-100/80 transition">
+                <div class="flex items-center gap-1.5 justify-start">
+                  <span>שם החניך</span>
+                  <span id="sort-icon-child_name" class="inline-flex"><i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i></span>
+                </div>
+              </th>
+              <th class="p-3">ת.ז חניך</th>
+              <th onclick="toggleSort('child_grade')" class="p-3 cursor-pointer hover:bg-slate-100/80 transition">
+                <div class="flex items-center gap-1.5 justify-start">
+                  <span>כיתה</span>
+                  <span id="sort-icon-child_grade" class="inline-flex"><i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i></span>
+                </div>
+              </th>
+              <th onclick="toggleSort('parent_name')" class="p-3 cursor-pointer hover:bg-slate-100/80 transition">
+                <div class="flex items-center gap-1.5 justify-start">
+                  <span>שם ההורה</span>
+                  <span id="sort-icon-parent_name" class="inline-flex"><i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i></span>
+                </div>
+              </th>
+              <th class="p-3">טלפון הורה</th>
+              <th class="p-3 text-center">חתימה</th>
+              <th class="p-3 text-center">הצהרת בריאות</th>
+              <th class="p-3 text-center">פעילות מים</th>
+              <th class="p-3 text-center">פעולות</th>
+            </tr>
+          </thead>
+          <tbody id="submissions-table-body" class="divide-y divide-slate-100">
+            <!-- Dynamically Rendered -->
+            <tr>
+              <td colspan="10" class="p-12 text-center text-slate-400">
+                <div class="flex flex-col items-center justify-center space-y-2">
+                  <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-600"></i>
+                  <p class="text-xs font-semibold">טוען נתוני חתימות...</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+      MODAL: VIEW SINGLE SIGNED DOCUMENT
+     ========================================== -->
+  <div 
+    id="view-document-modal-backdrop" 
+    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm no-print"
+    style="direction: rtl;"
+  >
+    <div class="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl text-right flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b pb-3 p-4 border-slate-100 bg-slate-50/50">
+        <h3 class="text-xs font-black text-slate-850 flex items-center gap-1.5 font-sans">
+          <i class="fa-solid fa-file-invoice text-brand-600 text-sm"></i>
+          <span>טופס אישור הורים חתום ומאושר</span>
+        </h3>
+        <div class="flex items-center gap-2">
+          <button 
+            onclick="printSingleDocumentFromModal()" 
+            class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer hover:scale-101"
+          >
+            <i class="fa-solid fa-print"></i>
+            <span>הדפס אישור</span>
+          </button>
+          <button onclick="closeViewDocumentModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg border border-transparent hover:border-slate-200 bg-white transition cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Content (Scrollable) -->
+      <div class="overflow-y-auto flex-1 p-6 md:p-8 space-y-6" id="view-document-modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+      JAVASCRIPT CODE ENGINE
+     ========================================== -->
+  <script>
+    // System Constants
+    const SUPABASE_URL = 'https://rbckzxfgtitknlfkfnhv.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_CtYnbiiIcNlZVq9rmQwofg_htbw8lA5';
+
+    // Global App States
+    let supabaseClient = null;
+    let isDbConnected = false;
+    let activeTemplateId = null; // The only template ID allowed to view
+    
+    let activeTemplate = null;
+    let globalSubmissions = [];
+    let filteredSubmissions = [];
+
+    // Sorting States
+    let currentSortColumn = 'created_at';
+    let currentSortDirection = 'desc';
+
+    let currentViewingSubmission = null;
+    let searchQuery = '';
+
+    // App Initialisation on DOM Load
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Parse active Template ID from search query
+      const urlParams = new URLSearchParams(window.location.search);
+      activeTemplateId = urlParams.get('id') || urlParams.get('view_only');
+
+      if (!activeTemplateId) {
+        showErrorView();
+        return;
+      }
+
+      // Initialize Supabase Client if possible
+      try {
+        if (window.supabase) {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+      } catch (err) {
+        console.warn("Supabase load error:", err);
+      }
+
+      await loadDatabaseRecords();
+    });
+
+    function showErrorView() {
+      document.getElementById('main-view').classList.add('hidden');
+      document.getElementById('error-view').classList.remove('hidden');
+    }
+
+    function decodeTemplateMetadata(t) {
+      if (!t) return t;
+      const copy = { ...t };
+      copy.include_grade_question = true; 
+      copy.grades_options = ['ט', 'י', 'יא', 'יב']; 
+      copy.include_vegetarian_option = false;
+      copy.payment_url = '';
+      copy.payment_urls = [];
+      
+      const rawText = t.commitment_text || '';
+      const marker = "\n===METADATA===\n";
+      const idx = rawText.indexOf(marker);
+      if (idx !== -1) {
+        try {
+          const jsonStr = rawText.substring(idx + marker.length);
+          const meta = JSON.parse(jsonStr);
+          copy.include_grade_question = meta.include_grade_question !== false;
+          copy.grades_options = meta.grades_options || ['ט', 'י', 'יא', 'יב'];
+          copy.include_vegetarian_option = !!meta.include_vegetarian_option;
+          copy.payment_url = meta.payment_url || '';
+          copy.payment_urls = meta.payment_urls || [];
+          
+          if ((!copy.payment_urls || copy.payment_urls.length === 0) && copy.payment_url) {
+            copy.payment_urls = [{ url: copy.payment_url, description: 'קישור לתשלום' }];
+          }
+          
+          copy.commitment_text = rawText.substring(0, idx);
+        } catch (e) {
+          console.error("Error parsing metadata, fallback to defaults.", e);
+        }
+      }
+      return copy;
+    }
+
+    function decodeSubmissionMetadata(sub) {
+      if (!sub) return sub;
+      const copy = { ...sub };
+      copy.vegetarian_choice = false;
+      copy.payment_proof_image = null;
+      
+      const rawDetails = sub.health_declaration_details || '';
+      const marker = "\n===SUB_METADATA===\n";
+      const idx = rawDetails.indexOf(marker);
+      if (idx !== -1) {
+        try {
+          const jsonStr = rawDetails.substring(idx + marker.length);
+          const meta = JSON.parse(jsonStr);
+          copy.vegetarian_choice = !!meta.vegetarian_choice;
+          copy.payment_proof_image = meta.payment_proof_image || null;
+          copy.health_declaration_details = rawDetails.substring(0, idx) || null;
+        } catch (e) {
+          console.error("Error parsing submission metadata:", e);
+        }
+      }
+      return copy;
+    }
+
+    async function loadDatabaseRecords() {
+      let success = false;
+      
+      if (supabaseClient) {
+        try {
+          // Fetch template - securely query ONLY the requested ID
+          const { data: tmps, error: errT } = await supabaseClient.from('parent_approvals').select('*').eq('id', activeTemplateId);
+          if (errT) throw errT;
+
+          if (!tmps || tmps.length === 0) {
+            showErrorView();
+            return;
+          }
+
+          // Fetch submissions - securely query ONLY the requested ID
+          const { data: subs, error: errS } = await supabaseClient.from('parent_submissions').select('*').eq('approval_id', activeTemplateId).order('created_at', { ascending: false });
+          if (errS) throw errS;
+
+          activeTemplate = decodeTemplateMetadata(tmps[0]);
+          globalSubmissions = (subs || []).map(s => decodeSubmissionMetadata(s));
+          isDbConnected = true;
+          success = true;
+
+        } catch (dbErr) {
+          console.error("Supabase load error:", dbErr);
+          isDbConnected = false;
+        }
+      }
+
+      if (!success) {
+        // Local fallback
+        const localT = localStorage.getItem('local_parent_approvals');
+        const localS = localStorage.getItem('local_parent_submissions');
+        
+        const decodedLocalTemplates = localT ? JSON.parse(localT).map(t => decodeTemplateMetadata(t)) : [];
+        const decodedLocalSubmissions = localS ? JSON.parse(localS).map(s => decodeSubmissionMetadata(s)) : [];
+        
+        const matchingTemplate = decodedLocalTemplates.find(t => t.id === activeTemplateId);
+        
+        if (matchingTemplate) {
+          activeTemplate = matchingTemplate;
+          globalSubmissions = decodedLocalSubmissions.filter(s => s.approval_id === activeTemplateId);
+          
+          const banner = document.getElementById('db-status-banner');
+          if (banner) {
+            banner.classList.remove('hidden');
+          }
+        } else {
+          // Ultimate fallback (e.g. dummy templates check)
+          const dummyTemplates = getInitialDummyTemplates().map(t => decodeTemplateMetadata(t));
+          const matchDummy = dummyTemplates.find(t => t.id === activeTemplateId);
+          if (matchDummy) {
+            activeTemplate = matchDummy;
+            globalSubmissions = decodedLocalSubmissions.filter(s => s.approval_id === activeTemplateId);
+          } else {
+            showErrorView();
+            return;
+          }
+        }
+      }
+
+      // Update UI with Active Template Info
+      document.getElementById('view-only-activity-name').innerText = activeTemplate.activity_name;
+      document.getElementById('active-submissions-title').innerHTML = `חתימות הורים שהתקבלו: <span class="text-brand-700 font-extrabold">${escapeHtmlAttr(activeTemplate.activity_name)}</span>`;
+      document.getElementById('active-submissions-subtitle').innerText = `לתבנית: ${activeTemplate.title} | הצג הורים חתומים שניתן לסנן ולפנות רפואית.`;
+
+      filterAndRenderSubmissions();
+    }
+
+    function getInitialDummyTemplates() {
+      return [
+        {
+          id: 'temp-form-1',
+          title: 'הצהרת בריאות ואישור הורים להשתתפות בטיול פתיחת שנה - מחלקת נוער',
+          activity_name: 'טיול פתיחת שנה ט-יב לחרמון',
+          commitment_text: `התחייבות ומשמעת:\nכללי התנהגות- תדרכתי את בני/בתי כי חל איסור מוחלט על היפרדות מהקבוצה, כניסה למים ללא אישור המדריך/המציל, עישון או שתיית אלכוהול.\nהחזרה מהטיול- חריגה מנהלי הבטיחות או התנהגות שאינה הולמת תגרור הרחקה מהטיול וחזרה הביתה באחריות ההורים ועל חשבונם.\nפינוי רפואי- במקרה של פציעה או מחלה במהלך הטיול, הצוות רשאי לפנות את החניך/ה לטיפול רפואי בתיאום.`,
+          created_at: '2026-01-01T12:00:00Z'
+        },
+        {
+          id: 'temp-form-2',
+          title: 'טופס רישום והצהרת בריאות עבור סמינר מנהיגות חורף סופ"ש',
+          activity_name: 'סמינר מנהיגות חורף',
+          commitment_text: `התחייבות ומשמעת:\nכללי התנהגות- תדרכתי את בני/בתי כי חל איסור מוחלט על היפרדות מהקבוצה, כניסה למים ללא אישור המדריך/המציל, עישון או שתיית אלכוהול.\nהחזרה מהטיול- חריגה מנהלי הבטיחות או התנהגות שאינה הולמת תגרור הרחקה מהטיול וחזרה הביתה באחריות ההורים ועל חשבונם.\nפינוי רפואי- במקרה של פציעה או מחלה במהלך הטיול, הצוות רשאי לפנות את החניך/ה לטיפול רפואי בתיאום.`,
+          created_at: '2026-02-15T12:00:00Z'
+        }
+      ];
+    }
+
+    async function refreshDashboardData() {
+      const btn = document.getElementById('btn-refresh-dashboard');
+      const icon = document.getElementById('refresh-icon');
+      if (btn && btn.disabled) return;
+
+      if (btn) btn.disabled = true;
+      if (icon) icon.classList.add('fa-spin');
+
+      try {
+        await loadDatabaseRecords();
+        
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true
+        });
+
+        Toast.fire({
+          icon: 'success',
+          title: 'הנתונים רועננו בהצלחה!'
+        });
+      } catch (err) {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'שגיאה ברענון',
+          text: 'אירעה שגיאה בעת ניסיון רענון הנתונים ממסד הנתונים.',
+          confirmButtonColor: '#7c3aed'
+        });
+      } finally {
+        if (btn) btn.disabled = false;
+        if (icon) icon.classList.remove('fa-spin');
+      }
+    }
+
+    function handleSearch() {
+      searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
+      filterAndRenderSubmissions();
+    }
+
+    function filterAndRenderSubmissions() {
+      if (!activeTemplate) return;
+
+      // Filter submissions based on search query
+      if (searchQuery) {
+        filteredSubmissions = globalSubmissions.filter(s => {
+          return (s.child_name && s.child_name.toLowerCase().includes(searchQuery)) ||
+                 (s.child_national_id && s.child_national_id.includes(searchQuery)) ||
+                 (s.parent_name && s.parent_name.toLowerCase().includes(searchQuery)) ||
+                 (s.parent_phone && s.parent_phone.includes(searchQuery));
+        });
+      } else {
+        filteredSubmissions = [...globalSubmissions];
+      }
+
+      renderSubmissionsList();
+    }
+
+    function renderSubmissionsList() {
+      const tbody = document.getElementById('submissions-table-body');
+      const exportBtn = document.getElementById('btn-export-submissions');
+      const exportTextBtn = document.getElementById('btn-export-text');
+      const printAllBtn = document.getElementById('btn-print-all-submissions');
+
+      if (!tbody) return;
+
+      const summaryContainer = document.getElementById('submissions-summary-container');
+      const summaryPills = document.getElementById('submissions-summary-pills');
+
+      if (filteredSubmissions.length === 0) {
+        if (summaryContainer && !searchQuery) summaryContainer.classList.add('hidden');
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="10" class="p-12 text-center text-slate-400">
+              <i class="fa-regular fa-folder-open text-3xl mb-2 text-slate-300"></i>
+              <p class="text-xs font-extrabold text-slate-700">אין עדיין חתימות הורים תואמות לפעילות זו</p>
+              <p class="text-[10px] text-slate-450 mt-1">אנא ודאו כי קישורים מופצים להורים.</p>
+            </td>
+          </tr>
+        `;
+        if (exportBtn) exportBtn.disabled = true;
+        if (exportTextBtn) exportTextBtn.disabled = true;
+        if (printAllBtn) printAllBtn.disabled = true;
+        return;
+      }
+
+      // Helper to sort classes in ascending order (א-יב)
+      function getGradeRank(g) {
+        if (!g) return { base: 999, number: 0 };
+        const cleaned = g.toString().trim();
+        let gradeLetter = '';
+        const match = cleaned.match(/^([א-ת]+)/);
+        if (match) {
+          gradeLetter = match[1];
+        }
+        
+        const gradeOrder = {
+          'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6,
+          'ז': 7, 'ח': 8, 'ט': 9, 'י': 10, 'יא': 11, 'יב': 12
+        };
+        
+        let base = gradeOrder[gradeLetter] || 99;
+        
+        let number = 0;
+        const numMatch = cleaned.match(/(\d+)/);
+        if (numMatch) {
+          number = parseInt(numMatch[1], 10);
+        }
+        
+        return { base, number };
+      }
+
+      // Sort submissions based on active sorting column and direction
+      filteredSubmissions.sort((a, b) => {
+        let valA = a[currentSortColumn];
+        let valB = b[currentSortColumn];
+
+        if (currentSortColumn === 'child_grade') {
+          const rankA = getGradeRank(a.child_grade);
+          const rankB = getGradeRank(b.child_grade);
+          
+          let compare = 0;
+          if (rankA.base !== rankB.base) {
+            compare = rankA.base - rankB.base;
+          } else if (rankA.number !== rankB.number) {
+            compare = rankA.number - rankB.number;
+          } else {
+            compare = (a.child_grade || '').localeCompare(b.child_grade || '', 'he');
+          }
+          if (compare === 0) {
+            compare = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+          }
+          return currentSortDirection === 'asc' ? compare : -compare;
+        }
+
+        if (currentSortColumn === 'created_at') {
+          const timeA = new Date(a.created_at || 0).getTime();
+          const timeB = new Date(b.created_at || 0).getTime();
+          let compare = timeA - timeB;
+          return currentSortDirection === 'asc' ? compare : -compare;
+        }
+
+        // String comparisons for names
+        let compare = (valA || '').toString().localeCompare((valB || '').toString(), 'he');
+        if (compare === 0) {
+          compare = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        }
+        return currentSortDirection === 'asc' ? compare : -compare;
+      });
+
+      // Update Sort Icons Visuals
+      const cols = ['created_at', 'child_name', 'child_grade', 'parent_name'];
+      cols.forEach(col => {
+        const iconEl = document.getElementById(`sort-icon-${col}`);
+        if (iconEl) {
+          if (currentSortColumn === col) {
+            if (currentSortDirection === 'desc') {
+              iconEl.innerHTML = `<i class="fa-solid fa-arrow-down-wide-short text-brand-600 text-[10px]"></i>`;
+            } else {
+              iconEl.innerHTML = `<i class="fa-solid fa-arrow-up-wide-short text-brand-600 text-[10px]"></i>`;
+            }
+          } else {
+            iconEl.innerHTML = `<i class="fa-solid fa-sort text-slate-300 text-[10px] opacity-50"></i>`;
+          }
+        }
+      });
+
+      // Render Summary Pills of signed participants per grade
+      if (summaryContainer && summaryPills) {
+        summaryContainer.classList.remove('hidden');
+        
+        const counts = {};
+        globalSubmissions.forEach(s => {
+          const g = s.child_grade || 'לא מוגדר';
+          counts[g] = (counts[g] || 0) + 1;
+        });
+
+        const sortedGrades = Object.keys(counts).sort((a, b) => {
+          const rankA = getGradeRank(a);
+          const rankB = getGradeRank(b);
+          if (rankA.base !== rankB.base) {
+            return rankA.base - rankB.base;
+          }
+          if (rankA.number !== rankB.number) {
+            return rankA.number - rankB.number;
+          }
+          return a.localeCompare(b, 'he');
+        });
+
+        let pillsHtml = '';
+        sortedGrades.forEach(g => {
+          let displayG = g;
+          if (!displayG.includes('בנים') && !displayG.includes('בנות')) {
+            displayG = g + "'";
+            if (g === 'יא') displayG = 'י"א';
+            if (g === 'יב' || g === 'יb') displayG = 'י"ב';
+          }
+          pillsHtml += `
+            <div class="inline-flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1 rounded-lg text-slate-800 text-[11px] font-bold shadow-3xs">
+              <span class="text-brand-700 font-extrabold">${displayG}:</span>
+              <span class="bg-brand-100 text-brand-850 px-1.5 py-0.5 rounded-md text-[10px] font-black">${counts[g]}</span>
+            </div>
+          `;
+        });
+        summaryPills.innerHTML = pillsHtml;
+      }
+
+      if (exportBtn) exportBtn.disabled = false;
+      if (exportTextBtn) exportTextBtn.disabled = false;
+      if (printAllBtn) printAllBtn.disabled = false;
+
+      let html = '';
+      filteredSubmissions.forEach(s => {
+        // Parse health option text
+        let healthText = '';
+        if (s.health_declaration_option === 'none') {
+          healthText = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 mx-auto" title="תקין / ללא מגבלה רפואית"><i class="fa-solid fa-heart text-xs"></i></span>`;
+        } else {
+          healthText = `
+            <button 
+              onclick="showMedicalDetailsAlert('${s.child_name}', \`${s.health_declaration_details || ''}\`)"
+              class="w-7 h-7 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-750 border border-rose-200 cursor-pointer transition select-none flex items-center justify-center mx-auto"
+              title="מגבלה רפואית או אלרגיה (לחצ/י להצגת פרטים מלאים)"
+            >
+              <i class="fa-solid fa-suitcase-medical text-rose-600 text-xs"></i>
+            </button>
+          `;
+        }
+
+        // Parse water option text
+        let waterText = '---';
+        if (s.water_declaration_option === 'can_swim') {
+          waterText = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-50 text-blue-700 border border-blue-100 mx-auto" title="מאשר/ת כניסה למים - יודע/ת לשחות"><i class="fa-solid fa-water text-xs"></i></span>`;
+        } else if (s.water_declaration_option === 'cannot_swim') {
+          waterText = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 text-amber-800 border border-amber-100 mx-auto" title="אינו/ה יודע/ת לשחות (כניסה עד גובה מותניים בלבד תחת השגחה)"><i class="fa-solid fa-life-ring text-xs"></i></span>`;
+        }
+
+        let displayGrade = s.child_grade;
+        if (displayGrade && !displayGrade.includes('בנים') && !displayGrade.includes('בנות')) {
+          displayGrade = s.child_grade + "'";
+          if (s.child_grade === 'יא') displayGrade = 'י"א';
+          if (s.child_grade === 'יב' || s.child_grade === 'יb') displayGrade = 'י"ב';
+        }
+
+        // Format Date/Time: DD/MM HH:mm
+        const dateObj = new Date(s.created_at);
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const formattedDateTime = `${day}/${month} ${hours}:${minutes}`;
+
+        html += `
+          <tr class="hover:bg-slate-50/40 transition border-b border-slate-100">
+            <td class="p-3 font-mono text-slate-600 font-medium">${formattedDateTime}</td>
+            <td class="p-3 font-bold text-slate-900">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span>${s.child_name}</span>
+                ${s.vegetarian_choice ? `<span class="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-200" title="מנה צמחונית"><i class="fa-solid fa-leaf text-[9px]"></i> צמחוני</span>` : ''}
+                ${s.payment_proof_image ? `<span class="inline-flex items-center gap-0.5 bg-indigo-50 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-200 cursor-pointer" onclick="viewPaymentProofAlert('${s.child_name}', '${s.payment_proof_image}')" title="הועלה אישור תשלום (לחץ לצפייה)"><i class="fa-solid fa-receipt text-[9px]"></i> שולם</span>` : ''}
+              </div>
+            </td>
+            <td class="p-3 font-mono text-slate-500">${s.child_national_id}</td>
+            <td class="p-3 font-semibold text-slate-600">${displayGrade}</td>
+            <td class="p-3 text-slate-700 font-medium">${s.parent_name}</td>
+            <td class="p-3 font-mono text-slate-650">${s.parent_phone}</td>
+            <td class="p-3">
+              <button 
+                onclick="viewDrawnSignatureOnly(\`${s.signature_svg}\`)" 
+                class="bg-brand-50 hover:bg-brand-100 text-brand-700 w-7 h-7 rounded-lg flex items-center justify-center mx-auto transition cursor-pointer"
+                title="הצג חתימה"
+              >
+                <i class="fa-solid fa-pen-fancy text-xs"></i>
+              </button>
+            </td>
+            <td class="p-3 text-center">${healthText}</td>
+            <td class="p-3 text-center">${waterText}</td>
+            <td class="p-3 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button 
+                  onclick="viewCompletedParentDocument('${s.id}')"
+                  class="bg-brand-50 hover:bg-brand-100 text-brand-700 w-7 h-7 rounded-lg flex items-center justify-center transition cursor-pointer"
+                  title="צפה בטופס החתום המלא"
+                >
+                  <i class="fa-solid fa-file-invoice text-xs"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function toggleSort(col) {
+      if (currentSortColumn !== col) {
+        currentSortColumn = col;
+        currentSortDirection = (col === 'child_grade') ? 'asc' : 'desc';
+      } else {
+        if (col === 'child_grade') {
+          if (currentSortDirection === 'asc') {
+            currentSortDirection = 'desc';
+          } else {
+            currentSortColumn = 'created_at';
+            currentSortDirection = 'desc';
+          }
+        } else {
+          if (currentSortDirection === 'desc') {
+            currentSortDirection = 'asc';
+          } else {
+            currentSortColumn = 'created_at';
+            currentSortDirection = 'desc';
+          }
+        }
+      }
+      renderSubmissionsList();
+    }
+
+    function showMedicalDetailsAlert(childName, text) {
+      Swal.fire({
+        title: `מגבלה רפואית - ${childName}`,
+        html: `<div class="text-right text-xs leading-relaxed text-slate-750 bg-red-50 p-4 border border-red-150 rounded-2xl whitespace-pre-line font-medium">${text || "לא צוינו פרטים נוספים"}</div>`,
+        icon: 'warning',
+        confirmButtonText: 'סגור',
+        confirmButtonColor: '#7c3aed'
+      });
+    }
+
+    function viewDrawnSignatureOnly(base64) {
+      Swal.fire({
+        title: 'חתימה מאושרת דיגיטלית',
+        imageUrl: base64,
+        imageAlt: 'חתימת ההורה',
+        confirmButtonText: 'סגור',
+        confirmButtonColor: '#7c3aed'
+      });
+    }
+
+    function viewPaymentProofAlert(childName, base64Image) {
+      Swal.fire({
+        title: `אישור תשלום - ${childName}`,
+        imageUrl: base64Image,
+        imageAlt: `צילום מסך אישור תשלום עבור ${childName}`,
+        imageHeight: 300,
+        confirmButtonText: 'סגור',
+        confirmButtonColor: '#7c3aed'
+      });
+    }
+
+    function viewCompletedParentDocument(subId) {
+      const sub = globalSubmissions.find(s => s.id === subId);
+      if (!sub) return;
+
+      currentViewingSubmission = sub;
+      
+      const modalBody = document.getElementById('view-document-modal-body');
+      if (!modalBody) return;
+
+      let gradeHtml = '';
+      if (activeTemplate.include_grade_question !== false) {
+        let displayG = sub.child_grade || '---';
+        if (displayG && !displayG.includes('בנים') && !displayG.includes('בנות') && displayG !== '---') {
+          displayG = sub.child_grade + "'";
+          if (sub.child_grade === 'יא') displayG = 'י"א';
+          if (sub.child_grade === 'יב' || sub.child_grade === 'יb') displayG = 'י"ב';
+        }
+        gradeHtml = `
+          <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-bold block">כיתה:</span>
+            <p class="font-extrabold text-slate-900 text-xs">${displayG}</p>
+          </div>
+        `;
+      }
+
+      let healthResult = '';
+      let healthDetailsBlock = '';
+      if (sub.health_declaration_option === 'none') {
+        healthResult = "✓ לא ידוע לי על מגבלה רפואית המונעת השתתפות מלאה.";
+      } else {
+        healthResult = "✗ מצהיר כי לחניך יש מגבלה רפואית כרונית / רגישות / אלרגיה מסכנת חיים.";
+        healthDetailsBlock = `
+          <div class="bg-rose-50 border border-rose-150 text-rose-955 p-3 rounded-xl text-xs whitespace-pre-line font-medium mt-2">
+            <span class="font-bold block text-rose-900 mb-0.5 font-sans">פירוט המגבלה הרפואית שדווחה:</span>
+            <span>${sub.health_declaration_details || 'לא צוינה'}</span>
+          </div>
+        `;
+      }
+
+      let waterHtml = '';
+      if (sub.water_declaration_option) {
+        let waterResult = '';
+        if (sub.water_declaration_option === 'can_swim') {
+          waterResult = "✓ מאשר/ת כי בני/בתי יודע/ת לשחות ומאשר/ת כניסה למים.";
+        } else {
+          waterResult = "✗ בני/בתי אינו/ה יודע/ת לשחות. רשאי/ת להיכנס עד גובה מותניים תחת השגחה.";
+        }
+        waterHtml = `
+          <div class="space-y-2 border-t border-slate-150 pt-4 font-sans">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-swimming-pool text-blue-500"></i>
+              <span>נספח אישור הצהרת פעילות מים</span>
+            </h4>
+            <p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+              על פי נהלי הבטיחות של משרד החינוך, השתתפות בפעילות מים דורשת הצהרה מפורשת של ההורה:
+              <br>
+              <span class="font-black text-slate-900 block mt-1">${waterResult}</span>
+            </p>
+          </div>
+        `;
+      }
+
+      let vegetarianHtml = '';
+      if (sub.vegetarian_choice) {
+        vegetarianHtml = `
+          <div class="space-y-1 bg-emerald-50/60 p-3 rounded-xl border border-emerald-100 col-span-3">
+            <span class="text-[10px] text-emerald-600 font-bold block">העדפה תזונתית:</span>
+            <p class="font-extrabold text-emerald-850 text-xs flex items-center gap-1">
+              <i class="fa-solid fa-seedling text-emerald-600"></i>
+              <span>החניך מעוניין במנה צמחונית 🌱</span>
+            </p>
+          </div>
+        `;
+      }
+
+      let paymentProofHtml = '';
+      if (sub.payment_proof_image) {
+        paymentProofHtml = `
+          <div class="space-y-2 border-t border-slate-150 pt-4 font-sans no-print">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-receipt text-emerald-600"></i>
+              <span>צילום מסך של אישור תשלום</span>
+            </h4>
+            <p class="text-[10px] text-slate-400 mb-1">ההורה העלה צילום מסך של אישור ההעברה כהוכחת תשלום (לחץ להגדלה):</p>
+            <div class="flex justify-start">
+              <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-1.5 max-w-[300px] shadow-xs">
+                <img 
+                  src="${sub.payment_proof_image}" 
+                  class="max-h-60 w-auto object-contain rounded-lg cursor-pointer hover:scale-[1.02] transition-all" 
+                  onclick="Swal.fire({
+                    title: 'אישור תשלום - ${sub.child_name}',
+                    imageUrl: '${sub.payment_proof_image}',
+                    imageAlt: 'אישור תשלום',
+                    confirmButtonText: 'סגור',
+                    confirmButtonColor: '#7c3aed'
+                  })" 
+                />
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const refId = sub.id ? sub.id.replace('sub-', '').toUpperCase() : 'LOCAL-TEMP';
+      const d = new Date(sub.created_at);
+      const rawDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+      modalBody.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex justify-between items-start border-b-2 border-slate-200 pb-4">
+            <div class="space-y-1">
+              <h2 class="text-sm font-black text-slate-900 leading-tight">${activeTemplate.title}</h2>
+              <div class="font-bold text-brand-700 text-xs">עבור: ${activeTemplate.activity_name}</div>
+              <p class="text-[9px] text-slate-450 font-medium">מספר סימוכין חתימה: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded">${refId}</span></p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי החניך</h3>
+            <div class="grid grid-cols-3 gap-3 text-xs text-slate-800">
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                <span class="text-[9px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
+                <p class="font-bold text-slate-900 text-xs">${sub.child_name}</p>
+              </div>
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
+                <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${sub.child_national_id}</p>
+              </div>
+              ${gradeHtml}
+              ${vegetarianHtml}
+            </div>
+          </div>
+
+          <div class="space-y-3 border-t border-slate-150 pt-4">
+            <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי ההורה וחתימה</h3>
+            <div class="grid grid-cols-4 gap-3 text-xs text-slate-800 items-stretch font-sans">
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+                <span class="text-[9px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
+                <p class="font-bold text-slate-900 text-xs">${sub.parent_name}</p>
+              </div>
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+                <span class="text-[9px] text-slate-400 font-bold block">טלפון הורה:</span>
+                <p class="font-semibold font-mono tracking-wide text-slate-900 text-xs">${sub.parent_phone}</p>
+              </div>
+              <div class="space-y-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+                <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
+                <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${sub.parent_national_id}</p>
+              </div>
+              <div class="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-col items-center justify-center col-span-1 text-center font-sans">
+                <span class="text-[9px] text-slate-500 font-bold mb-1 block">חתימה ${rawDate}:</span>
+                <div class="w-24 h-12 border border-slate-200 bg-white rounded-lg overflow-hidden flex items-center justify-center p-0.5 relative shrink-0">
+                  <img src="${sub.signature_svg}" class="max-w-full max-h-full object-contain" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 border-t border-slate-150 pt-4">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-heart-pulse text-red-500 text-[10px]"></i>
+              <span>הצהרת בריאות להשתתפות בטיול</span>
+            </h4>
+            <div class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+              אני, ההורה/האפוטרופוס של החניך/ה, מצהיר/ה בזאת כי:
+              <div class="font-black text-slate-900 mt-1">${healthResult}</div>
+              ${healthDetailsBlock}
+            </div>
+          </div>
+
+          ${waterHtml}
+          ${paymentProofHtml}
+
+          <div class="space-y-1.5 border-t border-slate-150 pt-4 text-xs">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-scale-balanced text-slate-600 text-[10px]"></i>
+              <span>התחייבות ומשמעת:</span>
+            </h4>
+            <div class="text-slate-600 whitespace-pre-line leading-relaxed text-[10px] bg-slate-50/50 p-3 rounded-xl border border-slate-100">${activeTemplate.commitment_text}</div>
+          </div>
+        </div>
+      `;
+
+      // Open Modal
+      document.getElementById('view-document-modal-backdrop').classList.remove('hidden');
+    }
+
+    function closeViewDocumentModal() {
+      document.getElementById('view-document-modal-backdrop').classList.add('hidden');
+      currentViewingSubmission = null;
+    }
+
+    function printSingleDocumentFromModal() {
+      if (!currentViewingSubmission || !activeTemplate) return;
+      
+      const s = currentViewingSubmission;
+      const bulkContainer = document.getElementById('bulk-print-container');
+      if (!bulkContainer) return;
+
+      let gradeHtml = '';
+      if (activeTemplate.include_grade_question !== false) {
+        let label = s.child_grade || '---';
+        if (label && !label.includes('בנים') && !label.includes('בנות') && label !== '---') {
+          label = s.child_grade + "'";
+          if (s.child_grade === 'יא') label = 'י"א';
+          if (s.child_grade === 'יb' || s.child_grade === 'יב') label = 'י"ב';
+        }
+        gradeHtml = `
+          <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-bold block">כיתה:</span>
+            <p class="font-extrabold text-slate-900">${label}</p>
+          </div>
+        `;
+      }
+
+      let healthResult = '';
+      let healthDetailsBlock = '';
+      if (s.health_declaration_option === 'none') {
+        healthResult = "✓ לא ידוע לי על מגבלה רפואית המונעת השתתפות מלאה.";
+      } else {
+        healthResult = "✗ מצהיר כי לחניך יש מגבלה רפואית כרונית / רגישות / אלרגיה מסכנת חיים.";
+        healthDetailsBlock = `
+          <div class="bg-rose-50 border border-rose-150 text-rose-955 p-3 rounded-xl text-[11px] whitespace-pre-line font-medium mt-2">
+            <span class="font-bold block text-rose-900 mb-0.5">פירוט המגבלה הרפואית שדווחה:</span>
+            <span>${s.health_declaration_details || 'לא צוינה'}</span>
+          </div>
+        `;
+      }
+
+      let waterHtml = '';
+      if (s.water_declaration_option) {
+        let waterResult = '';
+        if (s.water_declaration_option === 'can_swim') {
+          waterResult = "✓ מאשר/ת כי בני/בתי יודע/ת לשחות ומאשר/ת כניסה למים.";
+        } else {
+          waterResult = "✗ בני/בתי אינו/ה יודע/ת לשחות. רשאי/ת להיכנס עד גובה מותניים תחת השגחה.";
+        }
+        waterHtml = `
+          <div class="space-y-2 border-t border-slate-150 pt-4">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-swimming-pool text-blue-500 text-[10px]"></i>
+              <span>נספח אישור הצהרת פעילות מים</span>
+            </h4>
+            <p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+              על פי נהלי הבטיחות של משרד החינוך, השתתפות בפעילות מים דורשת הצהרה מפורשת של ההורה:
+              <br>
+              <span class="font-black text-slate-900 block mt-1">${waterResult}</span>
+            </p>
+          </div>
+        `;
+      }
+
+      let vegetarianHtml = '';
+      if (s.vegetarian_choice) {
+        vegetarianHtml = `
+          <div class="space-y-1 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100 col-span-3">
+            <span class="text-[10px] text-emerald-600 font-bold block">העדפה תזונתית:</span>
+            <p class="font-extrabold text-emerald-800 text-xs flex items-center gap-1">
+              <i class="fa-solid fa-seedling text-emerald-600"></i>
+              <span>החניך מעוניין במנה צמחונית 🌱</span>
+            </p>
+          </div>
+        `;
+      }
+
+      let paymentProofHtml = '';
+      if (s.payment_proof_image) {
+        paymentProofHtml = `
+          <div class="space-y-2 border-t border-slate-150 pt-4 font-sans" style="page-break-inside: avoid;">
+            <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-receipt text-emerald-600 text-[10px]"></i>
+              <span>צילום מסך של אישור תשלום</span>
+            </h4>
+            <div class="flex justify-start">
+              <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-1 max-w-[240px]">
+                <img src="${s.payment_proof_image}" class="max-h-48 w-auto object-contain rounded-lg" />
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const refId = s.id ? s.id.replace('sub-', '').toUpperCase() : 'LOCAL-TEMP';
+      const d = new Date(s.created_at);
+      const rawDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+      const printHtml = `
+        <div class="bg-white p-6 md:p-10 space-y-6 relative overflow-hidden print-card" style="box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; direction: rtl;">
+          <div class="space-y-6 flex-1">
+            <div class="flex justify-between items-start border-b-2 border-slate-200 pb-4">
+              <div class="space-y-1">
+                <h2 class="text-base font-black text-slate-900 border-none pb-0 leading-tight">${activeTemplate.title}</h2>
+                <div class="font-bold text-brand-700 text-xs">עבור: ${activeTemplate.activity_name}</div>
+                <p class="text-[9px] text-slate-450 font-medium">מספר סימוכין חתימה: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded">${refId}</span></p>
+              </div>
+              <div class="text-left shrink-0">
+                <div class="inline-flex flex-col items-center">
+                  <div class="w-10 h-10 rounded-xl border-2 border-slate-800 flex items-center justify-center text-slate-800 font-extrabold text-xs">נוער</div>
+                  <span class="text-[8px] text-slate-400 font-bold mt-1">מזכירות מחלקת נוער</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי החניך</h3>
+              <div class="grid grid-cols-3 gap-4 text-xs text-slate-800">
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                  <span class="text-[9px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
+                  <p class="font-bold text-slate-900 text-xs">${s.child_name}</p>
+                </div>
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                  <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
+                  <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.child_national_id}</p>
+                </div>
+                ${gradeHtml}
+                ${vegetarianHtml}
+              </div>
+            </div>
+
+            <div class="space-y-3 border-t border-slate-150 pt-4">
+              <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי ההורה וחתימה</h3>
+              <div class="grid grid-cols-4 gap-4 text-xs text-slate-800 items-stretch font-sans">
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                  <span class="text-[9px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
+                  <p class="font-bold text-slate-900 text-xs">${s.parent_name}</p>
+                </div>
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                  <span class="text-[9px] text-slate-400 font-bold block">טלפון הורה:</span>
+                  <p class="font-semibold font-mono tracking-wide text-slate-900 text-xs">${s.parent_phone}</p>
+                </div>
+                <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                  <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
+                  <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.parent_national_id}</p>
+                </div>
+                <div class="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center col-span-1 text-center font-sans">
+                  <span class="text-[9px] text-slate-500 font-bold mb-1 block">חתימה ${rawDate}:</span>
+                  <div class="w-24 h-10 border border-slate-200 bg-white rounded-lg overflow-hidden flex items-center justify-center p-0.5 relative shrink-0">
+                    <img src="${s.signature_svg}" class="max-w-full max-h-full object-contain" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5 border-t border-slate-150 pt-4">
+              <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 font-sans">
+                <i class="fa-solid fa-heart-pulse text-red-500 text-[10px]"></i>
+                <span>הצהרת בריאות להשתתפות בטיול</span>
+              </h4>
+              <div class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+                אני, ההורה/האפוטרופוס של החניך/ה, מצהיר/ה בזאת כי:
+                <div class="font-black text-slate-900 mt-1">${healthResult}</div>
+                ${healthDetailsBlock}
+              </div>
+            </div>
+
+            ${waterHtml}
+            ${paymentProofHtml}
+
+            <div class="space-y-1.5 border-t border-slate-150 pt-4 text-xs font-sans">
+              <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-scale-balanced text-slate-600 text-[10px]"></i>
+                <span>התחייבות ומשמעת:</span>
+              </h4>
+              <div class="text-slate-600 whitespace-pre-line leading-relaxed text-[10px] bg-slate-50/50 p-3 rounded-xl border border-slate-100">${activeTemplate.commitment_text}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      bulkContainer.innerHTML = printHtml;
+      bulkContainer.classList.remove('hidden');
+      document.body.classList.add('bulk-printing');
+
+      const afterPrintHandler = () => {
+        document.body.classList.remove('bulk-printing');
+        bulkContainer.classList.add('hidden');
+        bulkContainer.innerHTML = '';
+        window.removeEventListener('afterprint', afterPrintHandler);
+      };
+      window.addEventListener('afterprint', afterPrintHandler);
+
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    }
+
+    function exportSubmissionsCSV() {
+      if (!activeTemplate || filteredSubmissions.length === 0) return;
+
+      let csvContent = "\uFEFF";
+      csvContent += "שם החניך,ת.ז חניך,כיתה,שם הורה,טלפון הורה,ת.ז הורה,הצהרת בריאות,פרטים רפואיים,פעילות מים,תאריך הצהרה\n";
+
+      filteredSubmissions.forEach(s => {
+        const hOption = s.health_declaration_option === 'none' ? 'תקין (ללא מגבלות)' : 'מגבלה רפואית/רגישות';
+        const hDetail = s.health_declaration_details ? s.health_declaration_details.replace(/\r?\n|\r/g, " ") : '';
+        const wOption = s.water_declaration_option === 'can_swim' ? 'מאשר כניסה (יודע לשחות)' : (s.water_declaration_option === 'cannot_swim' ? 'לא שוחה' : 'אין מים בפעילות');
+        const formattedDate = new Date(s.created_at).toLocaleString('he-IL').replace(",", "");
+
+        csvContent += `"${s.child_name}","${s.child_national_id}","כיתה ${s.child_grade}'","${s.parent_name}","${s.parent_phone}","${s.parent_national_id}","${hOption}","${hDetail}","${wOption}","${formattedDate}"\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      
+      const fileDate = new Date().toISOString().slice(0, 10);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `אישורי_הורים_${activeTemplate.activity_name.replace(/ /g, "_")}_${fileDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportSubmissionsText() {
+      if (!activeTemplate || filteredSubmissions.length === 0) {
+        Swal.fire({ icon: 'warning', title: 'אין נרשמים', text: 'לא נמצאו נרשמים להעתקה.' });
+        return;
+      }
+
+      let textContent = `*רשימת נרשמים לפעילות: ${activeTemplate.activity_name}*\n\n`;
+      filteredSubmissions.forEach((s, index) => {
+        let displayGrade = s.child_grade || '';
+        if (displayGrade && !displayGrade.includes('בנים') && !displayGrade.includes('בנות')) {
+          displayGrade = s.child_grade + "'";
+          if (s.child_grade === 'יא') displayGrade = 'י"א';
+          if (s.child_grade === 'יב' || s.child_grade === 'יb') displayGrade = 'י"ב';
+        }
+        textContent += `${index + 1}. ${s.child_name} - ${displayGrade}\n`;
+      });
+
+      navigator.clipboard.writeText(textContent)
+        .then(() => {
+          Swal.fire({
+            icon: 'success',
+            title: 'הועתק בהצלחה!',
+            text: 'רשימת הנרשמים הועתקה ללוח העריכה. ניתן להדביק אותה כעת בוואטסאפ או בכל מקום אחר.',
+            confirmButtonColor: '#7c3aed',
+            timer: 3000
+          });
+        })
+        .catch(err => {
+          console.error("Failed to copy list:", err);
+          Swal.fire({
+            icon: 'error',
+            title: 'שגיאה בהעתקה',
+            text: 'לא ניתן היה להעתיק ללוח אוטומטית. אנא נסה שנית.',
+            confirmButtonColor: '#ef4444'
+          });
+        });
+    }
+
+    function printAllSubmissionsPDF() {
+      if (!activeTemplate || filteredSubmissions.length === 0) {
+        Swal.fire({ icon: 'warning', title: 'אין אישורים', text: 'לא נמצאו אישורי הורים חתומים להדפסה.' });
+        return;
+      }
+
+      Swal.fire({
+        title: 'מכין אישורים להורדה...',
+        text: 'אנא המתן בזמן שאנו מרכזים את כל הטפסים לקובץ אחד.',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      setTimeout(() => {
+        const bulkContainer = document.getElementById('bulk-print-container');
+        if (!bulkContainer) {
+          Swal.close();
+          return;
+        }
+
+        let html = '';
+        filteredSubmissions.forEach((s, idx) => {
+          let gradeHtml = '';
+          if (activeTemplate.include_grade_question !== false) {
+            let label = s.child_grade || '---';
+            if (label && !label.includes('בנים') && !label.includes('בנות') && label !== '---') {
+              label = s.child_grade + "'";
+              if (s.child_grade === 'יא') label = 'י"א';
+              if (s.child_grade === 'יb' || s.child_grade === 'יב') label = 'י"ב';
+            }
+            gradeHtml = `
+              <div class="space-y-1 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                <span class="text-[10px] text-slate-400 font-bold block">כיתה:</span>
+                <p class="font-extrabold text-slate-900">${label}</p>
+              </div>
+            `;
+          }
+
+          let healthResult = '';
+          let healthDetailsBlock = '';
+          if (s.health_declaration_option === 'none') {
+            healthResult = "✓ לא ידוע לי על מגבלה רפואית המונעת השתתפות מלאה.";
+          } else {
+            healthResult = "✗ מצהיר כי לחניך יש מגבלה רפואית כרונית / רגישות / אלרגיה מסכנת חיים.";
+            healthDetailsBlock = `
+              <div class="bg-rose-50 border border-rose-150 text-rose-955 p-3 rounded-xl text-[11px] whitespace-pre-line font-medium mt-2">
+                <span class="font-bold block text-rose-900 mb-0.5">פירוט המגבלה הרפואית שדווחה:</span>
+                <span>${s.health_declaration_details || 'לא צוינה'}</span>
+              </div>
+            `;
+          }
+
+          let waterHtml = '';
+          if (s.water_declaration_option) {
+            let waterResult = '';
+            if (s.water_declaration_option === 'can_swim') {
+              waterResult = "✓ מאשר/ת כי בני/בתי יודע/ת לשחות ומאשר/ת כניסה למים.";
+            } else {
+              waterResult = "✗ בני/בתי אינו/ה יודע/ת לשחות. רשאי/ת להיכנס עד גובה מותניים תחת השגחה.";
+            }
+            waterHtml = `
+              <div class="space-y-2 border-t border-slate-150 pt-4">
+                <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-swimming-pool text-blue-500 text-[10px]"></i>
+                  <span>נספח אישור הצהרת פעילות מים</span>
+                </h4>
+                <p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+                  על פי נהלי הבטיחות של משרד החינוך, השתתפות בפעילות מים דורשת הצהרה מפורשת של ההורה:
+                  <br>
+                  <span class="font-black text-slate-900 block mt-1">${waterResult}</span>
+                </p>
+              </div>
+            `;
+          }
+
+          let vegetarianHtml = '';
+          if (s.vegetarian_choice) {
+            vegetarianHtml = `
+              <div class="space-y-1 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100 col-span-3">
+                <span class="text-[10px] text-emerald-600 font-bold block">העדפה תזונתית:</span>
+                <p class="font-extrabold text-emerald-800 text-xs flex items-center gap-1">
+                  <i class="fa-solid fa-seedling text-emerald-600"></i>
+                  <span>החניך מעוניין במנה צמחונית 🌱</span>
+                </p>
+              </div>
+            `;
+          }
+
+          let paymentProofHtml = '';
+          if (s.payment_proof_image) {
+            paymentProofHtml = `
+              <div class="space-y-2 border-t border-slate-150 pt-4 font-sans" style="page-break-inside: avoid;">
+                <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-receipt text-emerald-600 text-[10px]"></i>
+                  <span>צילום מסך של אישור תשלום</span>
+                </h4>
+                <div class="flex justify-start">
+                  <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-1 max-w-[240px]">
+                    <img src="${s.payment_proof_image}" class="max-h-48 w-auto object-contain rounded-lg" />
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
+          const refId = s.id ? s.id.replace('sub-', '').toUpperCase() : 'LOCAL-TEMP';
+          const d = new Date(s.created_at);
+          const rawDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+          html += `
+            <div class="bg-white p-6 md:p-10 space-y-6 relative overflow-hidden print-card ${idx > 0 ? 'page-break border-t-2 border-slate-100 pt-10' : ''}" style="box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; direction: rtl;">
+              <div class="space-y-6 flex-1">
+                <div class="flex justify-between items-start border-b-2 border-slate-200 pb-4">
+                  <div class="space-y-1">
+                    <h2 class="text-base font-black text-slate-900 border-none pb-0 leading-tight">${activeTemplate.title}</h2>
+                    <div class="font-bold text-brand-700 text-xs">עבור: ${activeTemplate.activity_name}</div>
+                    <p class="text-[9px] text-slate-450 font-medium">מספר סימוכין חתימה: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded">${refId}</span></p>
+                  </div>
+                  <div class="text-left shrink-0">
+                    <div class="inline-flex flex-col items-center">
+                      <div class="w-10 h-10 rounded-xl border-2 border-slate-800 flex items-center justify-center text-slate-800 font-extrabold text-xs">נוער</div>
+                      <span class="text-[8px] text-slate-400 font-bold mt-1">מזכירות מחלקת נוער</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-3">
+                  <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי החניך</h3>
+                  <div class="grid grid-cols-3 gap-4 text-xs text-slate-800">
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                      <span class="text-[9px] text-slate-400 font-bold block">שם מלא של החניך/ה:</span>
+                      <p class="font-bold text-slate-900 text-xs">${s.child_name}</p>
+                    </div>
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                      <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות חניך:</span>
+                      <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.child_national_id}</p>
+                    </div>
+                    ${gradeHtml}
+                    ${vegetarianHtml}
+                  </div>
+                </div>
+
+                <div class="space-y-3 border-t border-slate-150 pt-4">
+                  <h3 class="text-xs font-bold text-slate-900 border-r-4 border-brand-600 pr-2 pb-0.5 font-sans">פרטי ההורה וחתימה</h3>
+                  <div class="grid grid-cols-4 gap-4 text-xs text-slate-800 items-stretch font-sans">
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                      <span class="text-[9px] text-slate-400 font-bold block">שם מלא של ההורה:</span>
+                      <p class="font-bold text-slate-900 text-xs">${s.parent_name}</p>
+                    </div>
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                      <span class="text-[9px] text-slate-400 font-bold block">טלפון הורה:</span>
+                      <p class="font-semibold font-mono tracking-wide text-slate-900 text-xs">${s.parent_phone}</p>
+                    </div>
+                    <div class="space-y-1 bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col justify-center">
+                      <span class="text-[9px] text-slate-400 font-bold block">תעודת זהות הורה:</span>
+                      <p class="font-bold font-mono tracking-wider text-slate-900 text-xs">${s.parent_national_id}</p>
+                    </div>
+                    <div class="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center col-span-1 text-center font-sans">
+                      <span class="text-[9px] text-slate-500 font-bold mb-1 block">חתימה ${rawDate}:</span>
+                      <div class="w-24 h-10 border border-slate-200 bg-white rounded-lg overflow-hidden flex items-center justify-center p-0.5 relative shrink-0">
+                        <img src="${s.signature_svg}" class="max-w-full max-h-full object-contain" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-1.5 border-t border-slate-150 pt-4">
+                  <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-heart-pulse text-red-500 text-[10px]"></i>
+                    <span>הצהרת בריאות להשתתפות בטיול</span>
+                  </h4>
+                  <div class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-150 font-medium">
+                    אני, ההורה/האפוטרופוס של החניך/ה, מצהיר/ה בזאת כי:
+                    <div class="font-black text-slate-900 mt-1">${healthResult}</div>
+                    ${healthDetailsBlock}
+                  </div>
+                </div>
+
+                ${waterHtml}
+                ${paymentProofHtml}
+
+                <div class="space-y-1.5 border-t border-slate-150 pt-4 text-xs">
+                  <h4 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-scale-balanced text-slate-600 text-[10px]"></i>
+                    <span>התחייבות ומשמעת:</span>
+                  </h4>
+                  <div class="text-slate-600 whitespace-pre-line leading-relaxed text-[10px] bg-slate-50/50 p-3 rounded-xl border border-slate-100">${activeTemplate.commitment_text}</div>
+                </div>
+              </div>
+
+            </div>
+          `;
+        });
+
+        bulkContainer.innerHTML = html;
+        bulkContainer.classList.remove('hidden');
+        document.body.classList.add('bulk-printing');
+
+        Swal.close();
+
+        const afterPrintHandler = () => {
+          document.body.classList.remove('bulk-printing');
+          bulkContainer.classList.add('hidden');
+          bulkContainer.innerHTML = '';
+          window.removeEventListener('afterprint', afterPrintHandler);
+        };
+        window.addEventListener('afterprint', afterPrintHandler);
+
+        setTimeout(() => {
+          window.print();
+        }, 300);
+
+      }, 1000);
+    }
+
+    function escapeHtmlAttr(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+    }
+  </script>
+  <div id="bulk-print-container" class="hidden"></div>
+</body>
+</html>
