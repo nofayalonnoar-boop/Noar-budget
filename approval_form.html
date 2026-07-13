@@ -204,57 +204,6 @@
           </div>
         </div>
 
-        <!-- Part E: Fill Parent Info -->
-        <div class="space-y-4 pt-2">
-          <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <h3 class="text-sm font-extrabold text-slate-900">פרטי ההורה / האפוטרופוס המאשר</h3>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">שם מלא של ההורה *</label>
-              <input 
-                type="text" 
-                id="parent-parent-name" 
-                required 
-                placeholder="לדוגמה: שרה כהן"
-                oninput="this.value = this.value.replace(/[^A-Za-zא-ת\s]/g, '')"
-                pattern="[A-Za-zא-ת\s]+"
-                title="אנא הזינו אותיות ורווחים בלבד"
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-medium"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">טלפון הורה *</label>
-              <input 
-                type="text" 
-                id="parent-parent-phone" 
-                required 
-                maxlength="10"
-                inputmode="tel"
-                pattern="05[0-9]{8}"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                placeholder="05XXXXXXXX"
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">תעודת זהות הורה *</label>
-              <input 
-                type="text" 
-                id="parent-parent-id" 
-                required 
-                maxlength="9"
-                inputmode="numeric"
-                pattern="[0-9]{9}"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                placeholder="000000000"
-                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-850 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
-              />
-            </div>
-          </div>
-        </div>
-
         <!-- Part A: Fixed Health Declarations -->
         <div class="space-y-4 pt-2">
           <p class="text-xs font-black text-slate-800 leading-relaxed pt-2">
@@ -396,6 +345,57 @@
                   <span>הקובץ נטען ונדחס בהצלחה! גודל: <span id="payment-compressed-size">0</span>KB</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Part E: Fill Parent Info (Moved right before signature) -->
+        <div class="space-y-4 pt-2">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <h3 class="text-sm font-extrabold text-slate-900">פרטי ההורה / האפוטרופוס המאשר</h3>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">שם מלא של ההורה *</label>
+              <input 
+                type="text" 
+                id="parent-parent-name" 
+                required 
+                placeholder="לדוגמה: שרה כהן"
+                oninput="this.value = this.value.replace(/[^A-Za-zא-ת\s]/g, '')"
+                pattern="[A-Za-zא-ת\s]+"
+                title="אנא הזינו אותיות ורווחים בלבד"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-medium"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">טלפון הורה *</label>
+              <input 
+                type="text" 
+                id="parent-parent-phone" 
+                required 
+                maxlength="10"
+                inputmode="tel"
+                pattern="05[0-9]{8}"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                placeholder="05XXXXXXXX"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">תעודת זהות הורה *</label>
+              <input 
+                type="text" 
+                id="parent-parent-id" 
+                required 
+                maxlength="9"
+                inputmode="numeric"
+                pattern="[0-9]{9}"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                placeholder="000000000"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-850 focus:outline-none focus:border-brand-500 font-mono text-center tracking-widest text-slate-900"
+              />
             </div>
           </div>
         </div>
