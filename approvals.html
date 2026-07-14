@@ -1215,12 +1215,21 @@
           const { data: tmps, error: errT } = await supabaseClient.from('parent_approvals').select('*').order('created_at', { ascending: false });
           if (errT) throw errT;
 
-          // Fetch submissions
-          const { data: subs, error: errS } = await supabaseClient.from('parent_submissions').select('*').order('created_at', { ascending: false });
+          // Fetch submissions (lightweight columns only, excluding massive signature_svg and health_declaration_details fields)
+          const { data: subs, error: errS } = await supabaseClient
+            .from('parent_submissions')
+            .select('id, approval_id, child_name, child_national_id, child_grade, parent_name, parent_phone, parent_national_id, health_declaration_option, water_declaration_option, created_at')
+            .order('created_at', { ascending: false });
           if (errS) throw errS;
 
           globalTemplates = (tmps || []).map(t => decodeTemplateMetadata(t));
-          globalSubmissions = (subs || []).map(s => decodeSubmissionMetadata(s));
+          globalSubmissions = (subs || []).map(s => {
+            const copy = { ...s };
+            copy.isHeavyLoaded = false;
+            copy.vegetarian_choice = false;
+            copy.payment_proof_image = null;
+            return copy;
+          });
           isDbConnected = true;
           success = true;
 
@@ -1245,7 +1254,11 @@
         const localS = localStorage.getItem('local_parent_submissions');
         
         const decodedLocalTemplates = localT ? JSON.parse(localT).map(t => decodeTemplateMetadata(t)) : [];
-        const decodedLocalSubmissions = localS ? JSON.parse(localS).map(s => decodeSubmissionMetadata(s)) : [];
+        const decodedLocalSubmissions = localS ? JSON.parse(localS).map(s => {
+          const decoded = decodeSubmissionMetadata(s);
+          decoded.isHeavyLoaded = true;
+          return decoded;
+        }) : [];
         
         const dummyTemplates = getInitialDummyTemplates().map(t => decodeTemplateMetadata(t));
         
@@ -1273,7 +1286,85 @@
 
       renderTemplatesList();
       renderSubmissionsList();
+      
+      // Load heavy fields (signatures, payment images) dynamically for the active template in the background (non-blocking)
+      if (activeTemplateId && isDbConnected && supabaseClient) {
+        const subsOfTemplate = globalSubmissions.filter(s => s.approval_id === activeTemplateId);
+        const hasUnloaded = subsOfTemplate.some(s => !s.isHeavyLoaded);
+        if (hasUnloaded) {
+          fetchSubmissionsHeavyFields(activeTemplateId).then(() => {
+            renderSubmissionsList();
+          });
+        }
+      }
+
       applyReadOnlyModeUI();
+    }
+
+    async function fetchSubmissionsHeavyFields(templateId) {
+      if (!templateId || !supabaseClient || !isDbConnected) return;
+
+      const subsToFetch = globalSubmissions.filter(s => s.approval_id === templateId && !s.isHeavyLoaded);
+      if (subsToFetch.length === 0) return;
+
+      const ids = subsToFetch.map(s => s.id);
+      
+      try {
+        const { data, error } = await supabaseClient
+          .from('parent_submissions')
+          .select('id, signature_svg, health_declaration_details')
+          .in('id', ids);
+
+        if (error) throw error;
+
+        if (data) {
+          data.forEach(dbRow => {
+            const sub = globalSubmissions.find(s => s.id === dbRow.id);
+            if (sub) {
+              sub.signature_svg = dbRow.signature_svg;
+              sub.health_declaration_details = dbRow.health_declaration_details;
+              sub.isHeavyLoaded = true;
+              
+              const decoded = decodeSubmissionMetadata(sub);
+              sub.vegetarian_choice = decoded.vegetarian_choice;
+              sub.payment_proof_image = decoded.payment_proof_image;
+              sub.health_declaration_details = decoded.health_declaration_details;
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching heavy fields:", err);
+      }
+    }
+
+    async function fetchSingleSubmissionHeavyFields(subId) {
+      if (!subId || !supabaseClient || !isDbConnected) return;
+
+      const sub = globalSubmissions.find(s => s.id === subId);
+      if (!sub || sub.isHeavyLoaded) return;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('parent_submissions')
+          .select('id, signature_svg, health_declaration_details')
+          .eq('id', subId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          sub.signature_svg = data.signature_svg;
+          sub.health_declaration_details = data.health_declaration_details;
+          sub.isHeavyLoaded = true;
+          
+          const decoded = decodeSubmissionMetadata(sub);
+          sub.vegetarian_choice = decoded.vegetarian_choice;
+          sub.payment_proof_image = decoded.payment_proof_image;
+          sub.health_declaration_details = decoded.health_declaration_details;
+        }
+      } catch (err) {
+        console.error("Error fetching single heavy fields:", err);
+      }
     }
 
     async function refreshDashboardData() {
@@ -1452,6 +1543,73 @@
       container.innerHTML = html;
     }
 
+    // Helper to sort classes in ascending order (א-יב)
+    function getGradeRank(g) {
+      if (!g) return { base: 999, number: 0 };
+      const cleaned = g.toString().trim();
+      let gradeLetter = '';
+      const match = cleaned.match(/^([א-ת]+)/);
+      if (match) {
+        gradeLetter = match[1];
+      }
+      
+      const gradeOrder = {
+        'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6,
+        'ז': 7, 'ח': 8, 'ט': 9, 'י': 10, 'יא': 11, 'יב': 12
+      };
+      
+      let base = gradeOrder[gradeLetter] || 99;
+      
+      let number = 0;
+      const numMatch = cleaned.match(/(\d+)/);
+      if (numMatch) {
+        number = parseInt(numMatch[1], 10);
+      }
+      
+      return { base, number };
+    }
+
+    // Sort submissions based on active sorting column and direction
+    function sortSubmissionsArray(subs) {
+      subs.sort((a, b) => {
+        let valA = a[currentSortColumn];
+        let valB = b[currentSortColumn];
+
+        if (currentSortColumn === 'child_grade') {
+          const rankA = getGradeRank(a.child_grade);
+          const rankB = getGradeRank(b.child_grade);
+          
+          let compare = 0;
+          if (rankA.base !== rankB.base) {
+            compare = rankA.base - rankB.base;
+          } else if (rankA.number !== rankB.number) {
+            compare = rankA.number - rankB.number;
+          } else {
+            compare = (a.child_grade || '').localeCompare(b.child_grade || '', 'he');
+          }
+          if (compare === 0) {
+            compare = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+          }
+          return currentSortDirection === 'asc' ? compare : -compare;
+        }
+
+        if (currentSortColumn === 'created_at') {
+          const timeA = new Date(a.created_at || 0).getTime();
+          const timeB = new Date(b.created_at || 0).getTime();
+          let compare = timeA - timeB;
+          return currentSortDirection === 'asc' ? compare : -compare;
+        }
+
+        // String comparisons for names
+        let compare = (valA || '').toString().localeCompare((valB || '').toString(), 'he');
+        if (compare === 0) {
+          compare = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        }
+        return currentSortDirection === 'asc' ? compare : -compare;
+      });
+      return subs;
+    }
+
     function renderSubmissionsList() {
       const tbody = document.getElementById('submissions-table-body');
       const containerTitle = document.getElementById('active-submissions-title');
@@ -1510,69 +1668,8 @@
         return;
       }
 
-      // Helper to sort classes in ascending order (א-יב)
-      function getGradeRank(g) {
-        if (!g) return { base: 999, number: 0 };
-        const cleaned = g.toString().trim();
-        let gradeLetter = '';
-        const match = cleaned.match(/^([א-ת]+)/);
-        if (match) {
-          gradeLetter = match[1];
-        }
-        
-        const gradeOrder = {
-          'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6,
-          'ז': 7, 'ח': 8, 'ט': 9, 'י': 10, 'יא': 11, 'יב': 12
-        };
-        
-        let base = gradeOrder[gradeLetter] || 99;
-        
-        let number = 0;
-        const numMatch = cleaned.match(/(\d+)/);
-        if (numMatch) {
-          number = parseInt(numMatch[1], 10);
-        }
-        
-        return { base, number };
-      }
-
       // Sort submissions based on active sorting column and direction
-      subs.sort((a, b) => {
-        let valA = a[currentSortColumn];
-        let valB = b[currentSortColumn];
-
-        if (currentSortColumn === 'child_grade') {
-          const rankA = getGradeRank(a.child_grade);
-          const rankB = getGradeRank(b.child_grade);
-          
-          let compare = 0;
-          if (rankA.base !== rankB.base) {
-            compare = rankA.base - rankB.base;
-          } else if (rankA.number !== rankB.number) {
-            compare = rankA.number - rankB.number;
-          } else {
-            compare = (a.child_grade || '').localeCompare(b.child_grade || '', 'he');
-          }
-          if (compare === 0) {
-            compare = new Date(a.created_at || 0) - new Date(b.created_at || 0);
-          }
-          return currentSortDirection === 'asc' ? compare : -compare;
-        }
-
-        if (currentSortColumn === 'created_at') {
-          const timeA = new Date(a.created_at || 0).getTime();
-          const timeB = new Date(b.created_at || 0).getTime();
-          let compare = timeA - timeB;
-          return currentSortDirection === 'asc' ? compare : -compare;
-        }
-
-        // String comparisons for names
-        let compare = (valA || '').toString().localeCompare((valB || '').toString(), 'he');
-        if (compare === 0) {
-          compare = new Date(a.created_at || 0) - new Date(b.created_at || 0);
-        }
-        return currentSortDirection === 'asc' ? compare : -compare;
-      });
+      sortSubmissionsArray(subs);
 
       // Update Sort Icons Visuals
       const cols = ['created_at', 'child_name', 'child_grade', 'parent_name'];
@@ -1683,7 +1780,7 @@
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span>${s.child_name}</span>
                 ${s.vegetarian_choice ? `<span class="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-200" title="מנה צמחונית"><i class="fa-solid fa-leaf text-[9px]"></i> צמחוני</span>` : ''}
-                ${s.payment_proof_image ? `<span class="inline-flex items-center gap-0.5 bg-indigo-50 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-200 cursor-pointer" onclick="viewPaymentProofAlert('${s.child_name}', '${s.payment_proof_image}')" title="הועלה אישור תשלום (לחץ לצפייה)"><i class="fa-solid fa-receipt text-[9px]"></i> שולם</span>` : ''}
+                ${s.payment_proof_image ? `<span class="inline-flex items-center gap-0.5 bg-indigo-50 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-200 cursor-pointer" onclick="viewPaymentProofAlert('${s.id}')" title="הועלה אישור תשלום (לחץ לצפייה)"><i class="fa-solid fa-receipt text-[9px]"></i> שולם</span>` : ''}
               </div>
             </td>
             <td class="p-3 font-mono text-slate-500">${s.child_national_id}</td>
@@ -1692,7 +1789,7 @@
             <td class="p-3 font-mono text-slate-650">${s.parent_phone}</td>
             <td class="p-3">
               <button 
-                onclick="viewDrawnSignatureOnly(\`${s.signature_svg}\`)" 
+                onclick="viewDrawnSignatureOnly('${s.id}')" 
                 class="bg-brand-50 hover:bg-brand-100 text-brand-700 w-7 h-7 rounded-lg flex items-center justify-center mx-auto transition cursor-pointer"
                 title="הצג חתימה"
               >
@@ -1733,6 +1830,16 @@
       activeTemplateId = id;
       renderTemplatesList();
       renderSubmissionsList();
+      
+      if (isDbConnected && supabaseClient) {
+        const subsOfTemplate = globalSubmissions.filter(s => s.approval_id === id);
+        const hasUnloaded = subsOfTemplate.some(s => !s.isHeavyLoaded);
+        if (hasUnloaded) {
+          fetchSubmissionsHeavyFields(id).then(() => {
+            renderSubmissionsList();
+          });
+        }
+      }
     }
 
     function toggleSort(col) {
@@ -1776,21 +1883,47 @@
       });
     }
 
-    function viewDrawnSignatureOnly(base64) {
+    async function viewDrawnSignatureOnly(subId) {
+      const sub = globalSubmissions.find(s => s.id === subId);
+      if (!sub) return;
+
+      if (!sub.isHeavyLoaded && isDbConnected && supabaseClient) {
+        Swal.fire({
+          title: 'טוען חתימה...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        await fetchSingleSubmissionHeavyFields(subId);
+        Swal.close();
+      }
+
       Swal.fire({
         title: 'חתימה מאושרת דיגיטלית',
-        imageUrl: base64,
+        imageUrl: sub.signature_svg || '',
         imageAlt: 'חתימת ההורה',
         confirmButtonText: 'סגור',
         confirmButtonColor: '#7c3aed'
       });
     }
 
-    function viewPaymentProofAlert(childName, base64Image) {
+    async function viewPaymentProofAlert(subId) {
+      const sub = globalSubmissions.find(s => s.id === subId);
+      if (!sub) return;
+
+      if (!sub.isHeavyLoaded && isDbConnected && supabaseClient) {
+        Swal.fire({
+          title: 'טוען אישור תשלום...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        await fetchSingleSubmissionHeavyFields(subId);
+        Swal.close();
+      }
+
       Swal.fire({
-        title: `אישור תשלום - ${childName}`,
-        imageUrl: base64Image,
-        imageAlt: `צילום מסך אישור תשלום עבור ${childName}`,
+        title: `אישור תשלום - ${sub.child_name}`,
+        imageUrl: sub.payment_proof_image || '',
+        imageAlt: `צילום מסך אישור תשלום עבור ${sub.child_name}`,
         imageHeight: 300,
         confirmButtonText: 'סגור',
         confirmButtonColor: '#7c3aed'
@@ -2151,9 +2284,19 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
 
     let currentViewingSubmission = null;
 
-    function viewCompletedParentDocument(subId) {
+    async function viewCompletedParentDocument(subId) {
       const sub = globalSubmissions.find(s => s.id === subId);
       if (!sub) return;
+
+      if (!sub.isHeavyLoaded && isDbConnected && supabaseClient) {
+        Swal.fire({
+          title: 'טוען פרטי טופס מלאים...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        await fetchSingleSubmissionHeavyFields(subId);
+        Swal.close();
+      }
 
       const actT = globalTemplates.find(t => t.id === sub.approval_id);
       if (!actT) return;
@@ -3244,12 +3387,27 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
     // ==========================================
     // EXPORT EXCEL/CSV EXPORTS ENGINE
     // ==========================================
-    function exportSubmissionsCSV() {
+    async function exportSubmissionsCSV() {
       const actT = globalTemplates.find(t => t.id === activeTemplateId);
       if (!actT) return;
 
       const subs = globalSubmissions.filter(s => s.approval_id === activeTemplateId);
       if (subs.length === 0) return;
+
+      // Ensure heavy fields (like medical details) are loaded before exporting
+      const missingHeavy = subs.some(s => !s.isHeavyLoaded);
+      if (missingHeavy && isDbConnected && supabaseClient) {
+        Swal.fire({
+          title: 'טוען נתונים לייצוא...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        await fetchSubmissionsHeavyFields(activeTemplateId);
+        Swal.close();
+      }
+
+      // Sort according to active table sorting
+      sortSubmissionsArray(subs);
 
       // Hebrew Excel-compatible UTF-8 BOM
       let csvContent = "\uFEFF";
@@ -3286,6 +3444,9 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
         Swal.fire({ icon: 'warning', title: 'אין נרשמים', text: 'לא נמצאו נרשמים להעתקה.' });
         return;
       }
+
+      // Sort according to active table sorting
+      sortSubmissionsArray(subs);
 
       // Format list: Name - Grade
       let textContent = `*רשימת נרשמים לפעילות: ${actT.activity_name}*\n\n`;
@@ -3324,7 +3485,7 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
     // ==========================================
     // BULK MULTI-PAGE PRINT TO PDF ENGINE
     // ==========================================
-    function printAllSubmissionsPDF() {
+    async function printAllSubmissionsPDF() {
       const actT = globalTemplates.find(t => t.id === activeTemplateId);
       if (!actT) return;
 
@@ -3333,6 +3494,22 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
         Swal.fire({ icon: 'warning', title: 'אין אישורים', text: 'לא נמצאו אישורי הורים חתומים להדפסה.' });
         return;
       }
+
+      // Check and fetch if there are any missing heavy fields (signatures/payment proofs)
+      const missingHeavy = subs.some(s => !s.isHeavyLoaded);
+      if (missingHeavy && isDbConnected && supabaseClient) {
+        Swal.fire({
+          title: 'טוען קבצים וחתימות...',
+          text: 'אנא המתן בזמן שאנו מורידים את כל קבצי החתימות והתמונות המלאים.',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        await fetchSubmissionsHeavyFields(activeTemplateId);
+        Swal.close();
+      }
+
+      // Sort according to active table sorting
+      sortSubmissionsArray(subs);
 
       Swal.fire({
         title: 'מכין אישורים להורדה...',
