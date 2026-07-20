@@ -118,6 +118,10 @@
           <i class="fa-solid fa-eye text-[9px]"></i>
           <span>צפייה בלבד</span>
         </span>
+        <span class="bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
+          <i class="fa-solid fa-users text-[9px]"></i>
+          <span>סך נרשמים: <span id="view-only-registrants-count" class="font-extrabold text-white">0</span></span>
+        </span>
       </div>
       <h2 id="view-only-activity-name" class="text-lg lg:text-xl font-black tracking-tight">טוען פעילות...</h2>
       <p class="text-xs text-brand-100 leading-normal max-w-2xl font-medium">ריכוז חתימות הורים והצהרות בריאות לפעילות זו. באפשרותך לייצא את רשימת הנרשמים, להוריד קובצי PDF או להעתיק את הרשימה לוואטסאפ.</p>
@@ -239,7 +243,7 @@
                 </div>
               </th>
               <th class="p-3">טלפון הורה</th>
-              <th class="p-3 text-center">חתימה</th>
+              <th class="p-3 text-center">חתימה ותשלום</th>
               <th class="p-3 text-center">הצהרת בריאות</th>
               <th class="p-3 text-center">פעילות מים</th>
               <th class="p-3 text-center">פעולות</th>
@@ -388,6 +392,7 @@
       const copy = { ...sub };
       copy.vegetarian_choice = false;
       copy.payment_proof_image = null;
+      copy.is_quick_filled = false;
       
       const rawDetails = sub.health_declaration_details || '';
       const marker = "\n===SUB_METADATA===\n";
@@ -398,6 +403,7 @@
           const meta = JSON.parse(jsonStr);
           copy.vegetarian_choice = !!meta.vegetarian_choice;
           copy.payment_proof_image = meta.payment_proof_image || null;
+          copy.is_quick_filled = !!meta.is_quick_filled;
           copy.health_declaration_details = rawDetails.substring(0, idx) || null;
         } catch (e) {
           console.error("Error parsing submission metadata:", e);
@@ -420,14 +426,31 @@
             return;
           }
 
-          // Fetch submissions - securely query ONLY the requested ID
-          const { data: subs, error: errS } = await supabaseClient.from('parent_submissions').select('*').eq('approval_id', activeTemplateId).order('created_at', { ascending: false });
+          // Fetch submissions (lightweight columns only, excluding massive signature_svg and health_declaration_details fields)
+          const { data: subs, error: errS } = await supabaseClient
+            .from('parent_submissions')
+            .select('id, approval_id, child_name, child_national_id, child_grade, parent_name, parent_phone, parent_national_id, health_declaration_option, water_declaration_option, created_at')
+            .eq('approval_id', activeTemplateId)
+            .order('created_at', { ascending: false });
           if (errS) throw errS;
 
           activeTemplate = decodeTemplateMetadata(tmps[0]);
-          globalSubmissions = (subs || []).map(s => decodeSubmissionMetadata(s));
+          globalSubmissions = (subs || []).map(s => {
+            const copy = { ...s };
+            copy.isHeavyLoaded = false;
+            copy.vegetarian_choice = false;
+            copy.payment_proof_image = null;
+            return copy;
+          });
           isDbConnected = true;
           success = true;
+
+          // Asynchronously load the heavy fields in the background to show badges and make the details ready
+          setTimeout(() => {
+            fetchSubmissionsHeavyFields(activeTemplateId).then(() => {
+              renderSubmissionsList();
+            });
+          }, 100);
 
         } catch (dbErr) {
           console.error("Supabase load error:", dbErr);
@@ -561,6 +584,12 @@
       const printAllBtn = document.getElementById('btn-print-all-submissions');
 
       if (!tbody) return;
+
+      // Update total registrants count badge dynamically
+      const countElem = document.getElementById('view-only-registrants-count');
+      if (countElem) {
+        countElem.innerText = globalSubmissions.length;
+      }
 
       const summaryContainer = document.getElementById('submissions-summary-container');
       const summaryPills = document.getElementById('submissions-summary-pills');
@@ -755,7 +784,7 @@
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span>${s.child_name}</span>
                 ${s.vegetarian_choice ? `<span class="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-200" title="מנה צמחונית"><i class="fa-solid fa-leaf text-[9px]"></i> צמחוני</span>` : ''}
-                ${s.payment_proof_image ? `<span class="inline-flex items-center gap-0.5 bg-indigo-50 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-200 cursor-pointer" onclick="viewPaymentProofAlert('${s.child_name}', '${s.payment_proof_image}')" title="הועלה אישור תשלום (לחץ לצפייה)"><i class="fa-solid fa-receipt text-[9px]"></i> שולם</span>` : ''}
+                ${s.is_quick_filled ? `<span class="inline-flex items-center gap-0.5 bg-sky-50 text-sky-850 text-[10px] font-bold px-1.5 py-0.5 rounded border border-sky-200" title="פרטי הטופס מולאו אוטומטית באמצעות 'מילוי פרטים מהיר'"><i class="fa-solid fa-bolt text-[9px] text-sky-500 animate-pulse"></i> מילוי מהיר</span>` : ''}
               </div>
             </td>
             <td class="p-3 font-mono text-slate-500">${s.child_national_id}</td>
@@ -764,11 +793,11 @@
             <td class="p-3 font-mono text-slate-650">${s.parent_phone}</td>
             <td class="p-3">
               <button 
-                onclick="viewDrawnSignatureOnly(\`${s.signature_svg}\`)" 
-                class="bg-brand-50 hover:bg-brand-100 text-brand-700 w-7 h-7 rounded-lg flex items-center justify-center mx-auto transition cursor-pointer"
-                title="הצג חתימה"
+                onclick="viewSignatureAndPayment('${s.id}')" 
+                class="bg-brand-50 hover:bg-brand-100 text-brand-700 w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition cursor-pointer"
+                title="צפה בחתימה ובאישור התשלום"
               >
-                <i class="fa-solid fa-pen-fancy text-xs"></i>
+                <i class="fa-solid fa-file-signature text-xs"></i>
               </button>
             </td>
             <td class="p-3 text-center">${healthText}</td>
@@ -825,10 +854,103 @@
       });
     }
 
-    function viewDrawnSignatureOnly(base64) {
+    async function fetchSubmissionsHeavyFields(templateId) {
+      if (!templateId || !supabaseClient || !isDbConnected) return;
+
+      const subsToFetch = globalSubmissions.filter(s => s.approval_id === templateId && !s.isHeavyLoaded);
+      if (subsToFetch.length === 0) return;
+
+      const ids = subsToFetch.map(s => s.id);
+      
+      try {
+        const { data, error } = await supabaseClient
+          .from('parent_submissions')
+          .select('id, signature_svg, health_declaration_details')
+          .in('id', ids);
+
+        if (error) throw error;
+
+        if (data) {
+          data.forEach(dbRow => {
+            const sub = globalSubmissions.find(s => s.id === dbRow.id);
+            if (sub) {
+              sub.signature_svg = dbRow.signature_svg;
+              sub.health_declaration_details = dbRow.health_declaration_details;
+              sub.isHeavyLoaded = true;
+              
+              const decoded = decodeSubmissionMetadata(sub);
+              sub.vegetarian_choice = decoded.vegetarian_choice;
+              sub.payment_proof_image = decoded.payment_proof_image;
+              sub.is_quick_filled = decoded.is_quick_filled;
+              sub.health_declaration_details = decoded.health_declaration_details;
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching heavy fields:", err);
+      }
+    }
+
+    async function fetchSingleSubmissionHeavyFields(subId) {
+      if (!subId || !supabaseClient || !isDbConnected) return;
+
+      const sub = globalSubmissions.find(s => s.id === subId);
+      if (!sub || sub.isHeavyLoaded) return;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('parent_submissions')
+          .select('id, signature_svg, health_declaration_details')
+          .eq('id', subId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          sub.signature_svg = data.signature_svg;
+          sub.health_declaration_details = data.health_declaration_details;
+          sub.isHeavyLoaded = true;
+          
+          const decoded = decodeSubmissionMetadata(sub);
+          sub.vegetarian_choice = decoded.vegetarian_choice;
+          sub.payment_proof_image = decoded.payment_proof_image;
+          sub.is_quick_filled = decoded.is_quick_filled;
+          sub.health_declaration_details = decoded.health_declaration_details;
+        }
+      } catch (err) {
+        console.error("Error fetching single heavy fields:", err);
+      }
+    }
+
+    async function viewDrawnSignatureOnly(subId) {
+      const sub = globalSubmissions.find(s => s.id === subId);
+      if (!sub) return;
+
+      if (!sub.isHeavyLoaded) {
+        Swal.fire({
+          title: 'טוען חתימה...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        await fetchSingleSubmissionHeavyFields(subId);
+        Swal.close();
+      }
+
+      if (!sub.signature_svg) {
+        Swal.fire({
+          title: 'שגיאה',
+          text: 'לא נמצאה חתימה עבור חניך זה',
+          icon: 'error',
+          confirmButtonText: 'סגור'
+        });
+        return;
+      }
+
       Swal.fire({
         title: 'חתימה מאושרת דיגיטלית',
-        imageUrl: base64,
+        imageUrl: sub.signature_svg,
         imageAlt: 'חתימת ההורה',
         confirmButtonText: 'סגור',
         confirmButtonColor: '#7c3aed'
@@ -846,9 +968,85 @@
       });
     }
 
-    function viewCompletedParentDocument(subId) {
+    async function viewSignatureAndPayment(subId) {
       const sub = globalSubmissions.find(s => s.id === subId);
       if (!sub) return;
+
+      if (!sub.isHeavyLoaded && isDbConnected && supabaseClient) {
+        Swal.fire({
+          title: 'טוען פרטים...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        await fetchSingleSubmissionHeavyFields(subId);
+        Swal.close();
+      }
+
+      // Prepare HTML for signature and payment proof
+      let htmlContent = `
+        <div class="flex flex-col gap-6 p-2 text-right text-slate-800" dir="rtl">
+          <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+            <h4 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
+              <i class="fa-solid fa-signature text-brand-600"></i>
+              <span>חתימה דיגיטלית מאושרת:</span>
+            </h4>
+            ${sub.signature_svg ? `
+              <div class="bg-white border border-slate-200 rounded-lg p-2 flex items-center justify-center max-h-[140px] overflow-hidden">
+                <img src="${sub.signature_svg}" alt="חתימה" class="max-h-[120px] object-contain" />
+              </div>
+            ` : `
+              <div class="text-xs text-slate-400 py-4 text-center">לא נמצאה חתימה במערכת</div>
+            `}
+          </div>
+
+          <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+            <h4 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
+              <i class="fa-solid fa-receipt text-indigo-600"></i>
+              <span>אישור תשלום שצורף:</span>
+            </h4>
+            ${sub.payment_proof_image ? `
+              <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col items-center justify-center gap-2">
+                <img src="${sub.payment_proof_image}" alt="אישור תשלום" class="max-h-[220px] rounded object-contain border border-slate-100 shadow-sm" />
+                <a href="${sub.payment_proof_image}" target="_blank" class="text-[10px] text-brand-600 font-bold hover:underline flex items-center gap-1">
+                  <i class="fa-solid fa-up-right-from-square"></i> פתיחת אישור התשלום בחלון חדש בגודל מלא
+                </a>
+              </div>
+            ` : `
+              <div class="text-xs text-slate-400 py-4 text-center">לא הועלה אישור תשלום עבור חניך זה</div>
+            `}
+          </div>
+        </div>
+      `;
+
+      Swal.fire({
+        title: `חתימה ואישור תשלום - ${sub.child_name}`,
+        html: htmlContent,
+        showConfirmButton: true,
+        confirmButtonText: 'סגור',
+        confirmButtonColor: '#7c3aed',
+        customClass: {
+          popup: 'rounded-2xl',
+          title: 'text-base font-bold text-slate-900 border-b border-slate-100 pb-3'
+        },
+        width: '450px'
+      });
+    }
+
+    async function viewCompletedParentDocument(subId) {
+      const sub = globalSubmissions.find(s => s.id === subId);
+      if (!sub) return;
+
+      if (!sub.isHeavyLoaded) {
+        Swal.fire({
+          title: 'טוען מסמך מלא...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        await fetchSingleSubmissionHeavyFields(subId);
+        Swal.close();
+      }
 
       currentViewingSubmission = sub;
       
