@@ -173,18 +173,6 @@
                 class="w-full rounded-xl border border-slate-200 px-3.5 py-1.5 text-[16px] md:text-xs text-slate-800 focus:outline-none focus:border-brand-500 font-semibold"
               >
                 <option value="" disabled selected>בחר כיתה...</option>
-                <option value="א">כיתה א'</option>
-                <option value="ב">כיתה ב'</option>
-                <option value="ג">כיתה ג'</option>
-                <option value="ד">כיתה ד'</option>
-                <option value="ה">כיתה ה'</option>
-                <option value="ו">כיתה ו'</option>
-                <option value="ז">כיתה ז'</option>
-                <option value="ח">כיתה ח'</option>
-                <option value="ט">כיתה ט'</option>
-                <option value="י">כיתה י'</option>
-                <option value="יא">כיתה י"א</option>
-                <option value="יב">כיתה י"ב</option>
               </select>
             </div>
           </div>
@@ -747,6 +735,7 @@
     let parentFormTemplateObj = null; 
     let temporarySignatureBase64 = null; 
     let compressedPaymentImageBase64 = null; // Stored locally compressed payment confirmation
+    let isQuickFilledUsed = false;
     
     // Canvas variables
     let canvas, ctx;
@@ -802,7 +791,8 @@
     function encodeSubmissionMetadata(sub) {
       const metadata = {
         vegetarian_choice: !!sub.vegetarian_choice,
-        payment_proof_image: sub.payment_proof_image || null
+        payment_proof_image: sub.payment_proof_image || null,
+        is_quick_filled: !!sub.is_quick_filled
       };
       const baseDetails = sub.health_declaration_details || '';
       return baseDetails + "\n===SUB_METADATA===\n" + JSON.stringify(metadata);
@@ -813,6 +803,7 @@
       const copy = { ...sub };
       copy.vegetarian_choice = false;
       copy.payment_proof_image = null;
+      copy.is_quick_filled = false;
       
       const rawDetails = sub.health_declaration_details || '';
       const marker = "\n===SUB_METADATA===\n";
@@ -823,6 +814,7 @@
           const meta = JSON.parse(jsonStr);
           copy.vegetarian_choice = !!meta.vegetarian_choice;
           copy.payment_proof_image = meta.payment_proof_image || null;
+          copy.is_quick_filled = !!meta.is_quick_filled;
           copy.health_declaration_details = rawDetails.substring(0, idx) || null;
         } catch (e) {
           console.error("Error parsing submission metadata:", e);
@@ -1001,6 +993,8 @@
       const child = window.quickFillEligibleChildren[index];
       if (!child) return;
 
+      isQuickFilledUsed = true;
+
       // Set Child details
       document.getElementById('parent-child-name').value = child.child_name || '';
       document.getElementById('parent-child-id').value = child.child_national_id || '';
@@ -1019,13 +1013,22 @@
         }
         if (!found && gradeToMatch) {
           // Try fuzzy matching (e.g. if option is "ט' בנים" and gradeToMatch is "ט")
+          const matches = [];
           for (let i = 0; i < gradeSelect.options.length; i++) {
             const optVal = gradeSelect.options[i].value;
-            if (optVal.startsWith(gradeToMatch) || gradeToMatch.startsWith(optVal)) {
-              gradeSelect.value = optVal;
-              found = true;
-              break;
+            // Clean values for comparison
+            const cleanOpt = optVal.replace(/['"׳]/g, '');
+            const cleanToMatch = gradeToMatch.replace(/['"׳]/g, '');
+            if (cleanOpt === cleanToMatch || cleanOpt.startsWith(cleanToMatch) || cleanToMatch.startsWith(cleanOpt)) {
+              matches.push(optVal);
             }
+          }
+          // If we have exactly one fuzzy match, use it. If we have multiple (like boys/girls), don't auto-guess, force manual select!
+          if (matches.length === 1) {
+            gradeSelect.value = matches[0];
+            found = true;
+          } else {
+            gradeSelect.value = ''; // ambiguous or no match, force choose
           }
         }
       }
@@ -1456,7 +1459,8 @@
           cloudRecord.health_declaration_details = encodeSubmissionMetadata({
             health_declaration_details: rawDetails,
             vegetarian_choice: isVegetarian,
-            payment_proof_image: compressedPaymentImageBase64
+            payment_proof_image: compressedPaymentImageBase64,
+            is_quick_filled: isQuickFilledUsed
           });
 
           const { data, error } = await client.from('parent_submissions').insert(cloudRecord).select();
@@ -1481,7 +1485,8 @@
         fallbackRecord.health_declaration_details = encodeSubmissionMetadata({
           health_declaration_details: rawDetails,
           vegetarian_choice: isVegetarian,
-          payment_proof_image: compressedPaymentImageBase64
+          payment_proof_image: compressedPaymentImageBase64,
+          is_quick_filled: isQuickFilledUsed
         });
 
         const savedSubmissions = localStorage.getItem('local_parent_submissions');
