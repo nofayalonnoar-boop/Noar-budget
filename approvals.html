@@ -107,6 +107,10 @@
             <i class="fa-solid fa-eye text-[9px]"></i>
             <span>צפייה בלבד</span>
           </span>
+          <span class="bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-users text-[9px]"></i>
+            <span>סך נרשמים: <span id="view-only-registrants-count" class="font-extrabold text-white">0</span></span>
+          </span>
         </div>
         <h2 id="view-only-activity-name" class="text-lg lg:text-xl font-black tracking-tight"></h2>
         <p class="text-xs text-brand-100 leading-normal max-w-2xl font-medium">ריכוז חתימות הורים והצהרות בריאות לפעילות זו. באפשרותך לייצא את רשימת הנרשמים, להוריד קובצי PDF או להעתיק את הרשימה לוואטסאפ.</p>
@@ -240,7 +244,7 @@
                     </div>
                   </th>
                   <th class="p-3">טלפון הורה</th>
-                  <th class="p-3 text-center">חתימה</th>
+                  <th class="p-3 text-center">חתימה ותשלום</th>
                   <th class="p-3 text-center">הצהרת בריאות</th>
                   <th class="p-3 text-center">פעילות מים</th>
                   <th class="p-3 text-center">פעולות</th>
@@ -1148,6 +1152,7 @@
       const copy = { ...sub };
       copy.vegetarian_choice = false;
       copy.payment_proof_image = null;
+      copy.is_quick_filled = false;
       
       const rawDetails = sub.health_declaration_details || '';
       const marker = "\n===SUB_METADATA===\n";
@@ -1158,6 +1163,7 @@
           const meta = JSON.parse(jsonStr);
           copy.vegetarian_choice = !!meta.vegetarian_choice;
           copy.payment_proof_image = meta.payment_proof_image || null;
+          copy.is_quick_filled = !!meta.is_quick_filled;
           copy.health_declaration_details = rawDetails.substring(0, idx) || null;
         } catch (e) {
           console.error("Error parsing submission metadata:", e);
@@ -1328,6 +1334,7 @@
               const decoded = decodeSubmissionMetadata(sub);
               sub.vegetarian_choice = decoded.vegetarian_choice;
               sub.payment_proof_image = decoded.payment_proof_image;
+              sub.is_quick_filled = decoded.is_quick_filled;
               sub.health_declaration_details = decoded.health_declaration_details;
             }
           });
@@ -1360,6 +1367,7 @@
           const decoded = decodeSubmissionMetadata(sub);
           sub.vegetarian_choice = decoded.vegetarian_choice;
           sub.payment_proof_image = decoded.payment_proof_image;
+          sub.is_quick_filled = decoded.is_quick_filled;
           sub.health_declaration_details = decoded.health_declaration_details;
         }
       } catch (err) {
@@ -1648,6 +1656,12 @@
 
       const subs = globalSubmissions.filter(s => s.approval_id === activeTemplateId);
 
+      // Update total registrants count badge dynamically
+      const countElem = document.getElementById('view-only-registrants-count');
+      if (countElem) {
+        countElem.innerText = subs.length;
+      }
+
       const summaryContainer = document.getElementById('submissions-summary-container');
       const summaryPills = document.getElementById('submissions-summary-pills');
 
@@ -1765,6 +1779,29 @@
           if (s.child_grade === 'יב' || s.child_grade === 'יb') displayGrade = 'י"ב';
         }
 
+        // Build list of possible/allowed grades for the quick dropdown
+        const allowedGradesList = actT.grades_options || ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב'];
+        const gradeOptions = [];
+        allowedGradesList.forEach(g => {
+          let label = g + "'";
+          if (g === 'יא') label = 'י"א';
+          if (g === 'יב' || g === 'יb') label = 'י"ב';
+          gradeOptions.push(`${label} בנים`);
+          gradeOptions.push(`${label} בנות`);
+        });
+
+        let selectOptionsHtml = '';
+        let matchedCurrent = false;
+        gradeOptions.forEach(opt => {
+          const isSel = (s.child_grade === opt);
+          if (isSel) matchedCurrent = true;
+          selectOptionsHtml += `<option value="${opt}" ${isSel ? 'selected' : ''}>${opt}</option>`;
+        });
+
+        if (!matchedCurrent && s.child_grade) {
+          selectOptionsHtml = `<option value="${s.child_grade}" selected>${displayGrade}</option>` + selectOptionsHtml;
+        }
+
         // Format Date/Time: DD/MM HH:mm
         const dateObj = new Date(s.created_at);
         const day = String(dateObj.getDate()).padStart(2, '0');
@@ -1780,20 +1817,28 @@
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span>${s.child_name}</span>
                 ${s.vegetarian_choice ? `<span class="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-200" title="מנה צמחונית"><i class="fa-solid fa-leaf text-[9px]"></i> צמחוני</span>` : ''}
-                ${s.payment_proof_image ? `<span class="inline-flex items-center gap-0.5 bg-indigo-50 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-200 cursor-pointer" onclick="viewPaymentProofAlert('${s.id}')" title="הועלה אישור תשלום (לחץ לצפייה)"><i class="fa-solid fa-receipt text-[9px]"></i> שולם</span>` : ''}
+                ${s.is_quick_filled ? `<span class="inline-flex items-center gap-0.5 bg-sky-50 text-sky-850 text-[10px] font-bold px-1.5 py-0.5 rounded border border-sky-200" title="פרטי הטופס מולאו אוטומטית באמצעות 'מילוי פרטים מהיר'"><i class="fa-solid fa-bolt text-[9px] text-sky-500 animate-pulse"></i> מילוי מהיר</span>` : ''}
               </div>
             </td>
             <td class="p-3 font-mono text-slate-500">${s.child_national_id}</td>
-            <td class="p-3 font-semibold text-slate-600">${displayGrade}</td>
+            <td class="p-3">
+              <select 
+                onchange="updateSubmissionGrade('${s.id}', this.value)"
+                class="appearance-none rounded-md border border-slate-200 hover:border-slate-350 px-1.5 py-0.5 text-[11px] text-slate-700 bg-slate-50/50 hover:bg-slate-50 focus:outline-none focus:border-brand-500 font-semibold cursor-pointer transition select-none text-center max-w-[95px] inline-block"
+                title="לחץ לשינוי מהיר של שכבה / כיתה"
+              >
+                ${selectOptionsHtml}
+              </select>
+            </td>
             <td class="p-3 text-slate-700 font-medium">${s.parent_name}</td>
             <td class="p-3 font-mono text-slate-650">${s.parent_phone}</td>
             <td class="p-3">
               <button 
-                onclick="viewDrawnSignatureOnly('${s.id}')" 
-                class="bg-brand-50 hover:bg-brand-100 text-brand-700 w-7 h-7 rounded-lg flex items-center justify-center mx-auto transition cursor-pointer"
-                title="הצג חתימה"
+                onclick="viewSignatureAndPayment('${s.id}')" 
+                class="bg-brand-50 hover:bg-brand-100 text-brand-700 w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition cursor-pointer"
+                title="צפה בחתימה ובאישור התשלום"
               >
-                <i class="fa-solid fa-pen-fancy text-xs"></i>
+                <i class="fa-solid fa-file-signature text-xs"></i>
               </button>
             </td>
             <td class="p-3 text-center">${healthText}</td>
@@ -1927,6 +1972,70 @@
         imageHeight: 300,
         confirmButtonText: 'סגור',
         confirmButtonColor: '#7c3aed'
+      });
+    }
+
+    async function viewSignatureAndPayment(subId) {
+      const sub = globalSubmissions.find(s => s.id === subId);
+      if (!sub) return;
+
+      if (!sub.isHeavyLoaded && isDbConnected && supabaseClient) {
+        Swal.fire({
+          title: 'טוען פרטים...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        await fetchSingleSubmissionHeavyFields(subId);
+        Swal.close();
+      }
+
+      // Prepare HTML for signature and payment proof
+      let htmlContent = `
+        <div class="flex flex-col gap-6 p-2 text-right text-slate-800" dir="rtl">
+          <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+            <h4 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
+              <i class="fa-solid fa-signature text-brand-600"></i>
+              <span>חתימה דיגיטלית מאושרת:</span>
+            </h4>
+            ${sub.signature_svg ? `
+              <div class="bg-white border border-slate-200 rounded-lg p-2 flex items-center justify-center max-h-[140px] overflow-hidden">
+                <img src="${sub.signature_svg}" alt="חתימה" class="max-h-[120px] object-contain" />
+              </div>
+            ` : `
+              <div class="text-xs text-slate-400 py-4 text-center">לא נמצאה חתימה במערכת</div>
+            `}
+          </div>
+
+          <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+            <h4 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
+              <i class="fa-solid fa-receipt text-indigo-600"></i>
+              <span>אישור תשלום שצורף:</span>
+            </h4>
+            ${sub.payment_proof_image ? `
+              <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col items-center justify-center gap-2">
+                <img src="${sub.payment_proof_image}" alt="אישור תשלום" class="max-h-[220px] rounded object-contain border border-slate-100 shadow-sm" />
+                <a href="${sub.payment_proof_image}" target="_blank" class="text-[10px] text-brand-600 font-bold hover:underline flex items-center gap-1">
+                  <i class="fa-solid fa-up-right-from-square"></i> פתיחת אישור התשלום בחלון חדש בגודל מלא
+                </a>
+              </div>
+            ` : `
+              <div class="text-xs text-slate-400 py-4 text-center">לא הועלה אישור תשלום עבור חניך זה</div>
+            `}
+          </div>
+        </div>
+      `;
+
+      Swal.fire({
+        title: `חתימה ואישור תשלום - ${sub.child_name}`,
+        html: htmlContent,
+        showConfirmButton: true,
+        confirmButtonText: 'סגור',
+        confirmButtonColor: '#7c3aed',
+        customClass: {
+          popup: 'rounded-2xl',
+          title: 'text-base font-bold text-slate-900 border-b border-slate-100 pb-3'
+        },
+        width: '450px'
       });
     }
 
@@ -2280,6 +2389,78 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       document.getElementById('view-parent-fill').classList.remove('hidden');
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function updateSubmissionGrade(subId, newGrade) {
+      if (!subId || !newGrade) return;
+
+      const sub = globalSubmissions.find(s => s.id === subId);
+      const oldGrade = sub ? sub.child_grade : '';
+      if (sub) {
+        sub.child_grade = newGrade;
+      }
+
+      // Re-render the submissions list and summary cards immediately for high perceived speed
+      renderSubmissionsList();
+
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+      });
+
+      // Update in local cache if present
+      const localS = localStorage.getItem('local_parent_submissions');
+      if (localS) {
+        try {
+          const arr = JSON.parse(localS);
+          const idx = arr.findIndex(s => s.id === subId);
+          if (idx !== -1) {
+            arr[idx].child_grade = newGrade;
+            localStorage.setItem('local_parent_submissions', JSON.stringify(arr));
+          }
+        } catch (e) {
+          console.error("Error syncing local submissions storage:", e);
+        }
+      }
+
+      if (isDbConnected && supabaseClient) {
+        try {
+          const { error } = await supabaseClient
+            .from('parent_submissions')
+            .update({ child_grade: newGrade })
+            .eq('id', subId);
+
+          if (error) throw error;
+
+          Toast.fire({
+            icon: 'success',
+            title: 'השכבה עודכנה בהצלחה בשרת'
+          });
+        } catch (dbErr) {
+          console.error("Error updating submission grade in DB:", dbErr);
+          
+          // Revert change locally on failure
+          if (sub) {
+            sub.child_grade = oldGrade;
+          }
+          renderSubmissionsList();
+
+          Swal.fire({
+            title: 'שגיאה בעדכון',
+            text: 'לא ניתן היה לשמור את השינוי בשרת. אנא בדוק את החיבור לרשת ונסה שנית.',
+            icon: 'error',
+            confirmButtonText: 'הבנתי'
+          });
+        }
+      } else {
+        Toast.fire({
+          icon: 'success',
+          title: 'השכבה עודכנה מקומית בהצלחה'
+        });
+      }
     }
 
     let currentViewingSubmission = null;
