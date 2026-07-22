@@ -120,6 +120,23 @@
         <p id="parent-preview-activity-badge" class="text-xs lg:text-sm text-brand-700 font-bold"></p>
       </div>
 
+      <!-- Registration Closed Message Card -->
+      <div id="registration-closed-card" class="hidden bg-white border border-slate-200 rounded-3xl p-8 lg:p-12 shadow-sm text-center max-w-2xl mx-auto space-y-6">
+        <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-rose-50 text-rose-600 mb-2">
+          <i class="fa-solid fa-calendar-xmark text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-black text-slate-950">ההרשמה לפעילות זו נסגרה</h3>
+        <p id="registration-closed-reason" class="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+          לא ניתן להירשם יותר לפעילות זו מכיוון שמועד ההרשמה פג או שמכסת המקומות התמלאה.
+        </p>
+        <div class="pt-4 border-t border-slate-100 flex justify-center gap-4">
+          <a href="approvals.html" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2 rounded-xl transition">
+            <i class="fa-solid fa-arrow-right"></i>
+            <span>חזרה ללוח בקרה</span>
+          </a>
+        </div>
+      </div>
+
       <!-- Core Form card declaration -->
       <form id="parent-approval-form" onsubmit="submitParentDeclaration(event)" class="bg-white border border-slate-200 rounded-3xl p-6 lg:p-8 shadow-sm space-y-6">
         
@@ -736,6 +753,7 @@
     let temporarySignatureBase64 = null; 
     let compressedPaymentImageBase64 = null; // Stored locally compressed payment confirmation
     let isQuickFilledUsed = false;
+    let isRegistrationClosed = false;
     
     // Canvas variables
     let canvas, ctx;
@@ -752,6 +770,8 @@
       copy.include_vegetarian_option = false;
       copy.payment_url = '';
       copy.payment_urls = [];
+      copy.reg_deadline = '';
+      copy.max_registrants = '';
       
       const text = t.commitment_text || '';
       const marker = "\n===METADATA===\n";
@@ -767,6 +787,8 @@
           copy.include_vegetarian_option = !!parsed.include_vegetarian_option;
           copy.payment_url = parsed.payment_url || '';
           copy.payment_urls = parsed.payment_urls || [];
+          copy.reg_deadline = parsed.reg_deadline || '';
+          copy.max_registrants = parsed.max_registrants || '';
           
           if ((!copy.payment_urls || copy.payment_urls.length === 0) && copy.payment_url) {
             copy.payment_urls = [{ url: copy.payment_url, description: 'קישור לתשלום בפעילות' }];
@@ -825,6 +847,7 @@
 
     // QUICK FILL FUNCTIONS
     function openQuickFillModal() {
+      if (isRegistrationClosed) return;
       const backdrop = document.getElementById('quick-fill-modal-backdrop');
       if (backdrop) backdrop.classList.remove('hidden');
       
@@ -1158,6 +1181,81 @@
 
       if (activeTempl && activeTempl.activity_name) {
         document.title = `טופס אישור הורים והצהרת בריאות | ${activeTempl.activity_name}`;
+      }
+
+      // 1. Fetch current registration count for this activity
+      let submissionsCount = 0;
+      if (window.supabase) {
+        try {
+          const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          const { count, error } = await client
+            .from('parent_submissions')
+            .select('*', { count: 'exact', head: true })
+            .eq('approval_id', activeTempl.id);
+          if (!error && count !== null) {
+            submissionsCount = count;
+          }
+        } catch (err) {
+          console.warn("Error getting submissions count:", err);
+        }
+      }
+      
+      // Fallback/merge with local storage count
+      try {
+        const localS = localStorage.getItem('local_parent_submissions');
+        if (localS) {
+          const decoded = JSON.parse(localS);
+          const localCount = decoded.filter(s => s.approval_id === activeTempl.id).length;
+          if (localCount > submissionsCount) {
+            submissionsCount = localCount;
+          }
+        }
+      } catch (e) {}
+
+      // 2. Perform limits check
+      isRegistrationClosed = false;
+      let closeReason = "";
+
+      if (activeTempl.reg_deadline) {
+        const deadlineDate = new Date(activeTempl.reg_deadline);
+        const now = new Date();
+        if (now > deadlineDate) {
+          isRegistrationClosed = true;
+          const formattedDl = deadlineDate.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+          closeReason = `מועד הרישום האחרון לפעילות זו (${formattedDl}) עבר.`;
+        }
+      }
+
+      if (!isRegistrationClosed && activeTempl.max_registrants) {
+        const maxCap = parseInt(activeTempl.max_registrants, 10);
+        if (submissionsCount >= maxCap) {
+          isRegistrationClosed = true;
+          closeReason = `ההרשמה נסגרה מכיוון שהתקבלה כמות הנרשמים המקסימלית המותרת לפעילות זו (${maxCap} משתתפים).`;
+        }
+      }
+
+      // 3. Update UI based on limit check
+      const closedCard = document.getElementById('registration-closed-card');
+      const closedReasonEl = document.getElementById('registration-closed-reason');
+      const formEl = document.getElementById('parent-approval-form');
+
+      if (isRegistrationClosed) {
+        if (formEl) formEl.classList.add('hidden');
+        if (closedCard) {
+          closedCard.classList.remove('hidden');
+          // Hide back button if viewing from direct parent form (no approvals.html in referrer)
+          const backBtn = closedCard.querySelector('a');
+          if (backBtn) {
+            const isManagerEmbedded = document.referrer && document.referrer.includes('approvals.html');
+            if (!isManagerEmbedded) {
+              backBtn.classList.add('hidden');
+            }
+          }
+        }
+        if (closedReasonEl) closedReasonEl.innerText = closeReason;
+      } else {
+        if (formEl) formEl.classList.remove('hidden');
+        if (closedCard) closedCard.classList.add('hidden');
       }
 
       // Update fields
