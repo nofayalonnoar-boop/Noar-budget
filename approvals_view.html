@@ -361,6 +361,8 @@
       copy.include_vegetarian_option = false;
       copy.payment_url = '';
       copy.payment_urls = [];
+      copy.reg_deadline = '';
+      copy.max_registrants = '';
       
       const rawText = t.commitment_text || '';
       const marker = "\n===METADATA===\n";
@@ -374,6 +376,8 @@
           copy.include_vegetarian_option = !!meta.include_vegetarian_option;
           copy.payment_url = meta.payment_url || '';
           copy.payment_urls = meta.payment_urls || [];
+          copy.reg_deadline = meta.reg_deadline || '';
+          copy.max_registrants = meta.max_registrants || '';
           
           if ((!copy.payment_urls || copy.payment_urls.length === 0) && copy.payment_url) {
             copy.payment_urls = [{ url: copy.payment_url, description: 'קישור לתשלום' }];
