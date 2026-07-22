@@ -784,7 +784,7 @@
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span>${s.child_name}</span>
                 ${s.vegetarian_choice ? `<span class="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-200" title="מנה צמחונית"><i class="fa-solid fa-leaf text-[9px]"></i> צמחוני</span>` : ''}
-                ${s.is_quick_filled ? `<span class="inline-flex items-center gap-0.5 bg-sky-50 text-sky-850 text-[10px] font-bold px-1.5 py-0.5 rounded border border-sky-200" title="פרטי הטופס מולאו אוטומטית באמצעות 'מילוי פרטים מהיר'"><i class="fa-solid fa-bolt text-[9px] text-sky-500 animate-pulse"></i> מילוי מהיר</span>` : ''}
+                ${s.is_quick_filled ? `<i class="fa-solid fa-bolt text-sky-500 animate-pulse text-xs" title="פרטי הטופס מולאו אוטומטית באמצעות 'מילוי מהיר'"></i>` : ''}
               </div>
             </td>
             <td class="p-3 font-mono text-slate-500">${s.child_national_id}</td>
