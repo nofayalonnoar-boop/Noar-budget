@@ -1186,8 +1186,11 @@
             const labelBoys = `${label} בנים`;
             const labelGirls = `${label} בנות`;
             
-            selectHtml.push(`<option value="${labelBoys}">כיתה ${labelBoys}</option>`);
-            selectHtml.push(`<option value="${labelGirls}">כיתה ${labelGirls}</option>`);
+            const safeBoys = labelBoys.replace(/"/g, '&quot;');
+            const safeGirls = labelGirls.replace(/"/g, '&quot;');
+            
+            selectHtml.push(`<option value="${safeBoys}">כיתה ${labelBoys}</option>`);
+            selectHtml.push(`<option value="${safeGirls}">כיתה ${labelGirls}</option>`);
           });
           gradeSelect.innerHTML = selectHtml.join('');
         }
