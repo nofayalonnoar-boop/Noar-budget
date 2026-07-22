@@ -1795,11 +1795,13 @@
         gradeOptions.forEach(opt => {
           const isSel = (s.child_grade === opt);
           if (isSel) matchedCurrent = true;
-          selectOptionsHtml += `<option value="${opt}" ${isSel ? 'selected' : ''}>${opt}</option>`;
+          const safeOpt = opt.replace(/"/g, '&quot;');
+          selectOptionsHtml += `<option value="${safeOpt}" ${isSel ? 'selected' : ''}>${opt}</option>`;
         });
 
         if (!matchedCurrent && s.child_grade) {
-          selectOptionsHtml = `<option value="${s.child_grade}" selected>${displayGrade}</option>` + selectOptionsHtml;
+          const safeGrade = s.child_grade.replace(/"/g, '&quot;');
+          selectOptionsHtml = `<option value="${safeGrade}" selected>${displayGrade}</option>` + selectOptionsHtml;
         }
 
         // Format Date/Time: DD/MM HH:mm
@@ -1817,7 +1819,7 @@
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span>${s.child_name}</span>
                 ${s.vegetarian_choice ? `<span class="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-200" title="מנה צמחונית"><i class="fa-solid fa-leaf text-[9px]"></i> צמחוני</span>` : ''}
-                ${s.is_quick_filled ? `<span class="inline-flex items-center gap-0.5 bg-sky-50 text-sky-850 text-[10px] font-bold px-1.5 py-0.5 rounded border border-sky-200" title="פרטי הטופס מולאו אוטומטית באמצעות 'מילוי פרטים מהיר'"><i class="fa-solid fa-bolt text-[9px] text-sky-500 animate-pulse"></i> מילוי מהיר</span>` : ''}
+                ${s.is_quick_filled ? `<i class="fa-solid fa-bolt text-sky-500 animate-pulse text-xs" title="פרטי הטופס מולאו אוטומטית באמצעות 'מילוי מהיר'"></i>` : ''}
               </div>
             </td>
             <td class="p-3 font-mono text-slate-500">${s.child_national_id}</td>
@@ -2151,8 +2153,11 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
             const labelBoys = `${label} בנים`;
             const labelGirls = `${label} בנות`;
             
-            selectHtml.push(`<option value="${labelBoys}">כיתה ${labelBoys}</option>`);
-            selectHtml.push(`<option value="${labelGirls}">כיתה ${labelGirls}</option>`);
+            const safeBoys = labelBoys.replace(/"/g, '&quot;');
+            const safeGirls = labelGirls.replace(/"/g, '&quot;');
+            
+            selectHtml.push(`<option value="${safeBoys}">כיתה ${labelBoys}</option>`);
+            selectHtml.push(`<option value="${safeGirls}">כיתה ${labelGirls}</option>`);
           });
           gradeSelect.innerHTML = selectHtml.join('');
         }
