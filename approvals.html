@@ -816,6 +816,36 @@
           </div>
         </div>
 
+        <!-- Deadline and Capacity Config block -->
+        <div class="p-4 bg-amber-50/40 border border-amber-100 rounded-xl space-y-3">
+          <h4 class="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>הגבלות רישום (מועד וקיבולת)</span>
+          </h4>
+          <p class="text-[10px] text-slate-500 leading-normal">באפשרותך להגדיר תאריך ושעה שמעבר להם לא תתאפשר הרשמה, וכן להגביל את מספר הנרשמים המקסימלי לפעילות.</p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-100">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 mb-1">מועד אחרון להרשמה (תאריך ושעה)</label>
+              <input 
+                type="datetime-local" 
+                id="modal-template-reg-deadline" 
+                class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-semibold"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 mb-1">כמות נרשמים מקסימלית (ריק ללא הגבלה)</label>
+              <input 
+                type="number" 
+                id="modal-template-max-registrants" 
+                min="1"
+                placeholder="לדוגמה: 50" 
+                class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-semibold"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- Payment Link Config block -->
         <div class="p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl space-y-3">
           <div class="flex items-center gap-3">
@@ -1099,7 +1129,9 @@
         grades_options: t.grades_options || ['ט', 'י', 'יא', 'יב'],
         include_vegetarian_option: !!t.include_vegetarian_option,
         payment_url: t.payment_url || '',
-        payment_urls: t.payment_urls || []
+        payment_urls: t.payment_urls || [],
+        reg_deadline: t.reg_deadline || '',
+        max_registrants: t.max_registrants || ''
       };
       
       let rawText = t.commitment_text || '';
@@ -1121,6 +1153,8 @@
       copy.include_vegetarian_option = false;
       copy.payment_url = '';
       copy.payment_urls = [];
+      copy.reg_deadline = '';
+      copy.max_registrants = '';
       
       const rawText = t.commitment_text || '';
       const marker = "\n===METADATA===\n";
@@ -1134,6 +1168,8 @@
           copy.include_vegetarian_option = !!meta.include_vegetarian_option;
           copy.payment_url = meta.payment_url || '';
           copy.payment_urls = meta.payment_urls || [];
+          copy.reg_deadline = meta.reg_deadline || '';
+          copy.max_registrants = meta.max_registrants || '';
           
           if ((!copy.payment_urls || copy.payment_urls.length === 0) && copy.payment_url) {
             copy.payment_urls = [{ url: copy.payment_url, description: 'קישור לתשלום' }];
@@ -1504,16 +1540,37 @@
         const isSelected = t.id === activeTemplateId;
         const subCount = globalSubmissions.filter(s => s.approval_id === t.id).length;
         
+        let badgesHtml = '';
+        if (t.reg_deadline) {
+          const dl = new Date(t.reg_deadline);
+          const isPassed = new Date() > dl;
+          const formattedDl = dl.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+          if (isPassed) {
+            badgesHtml += `<span class="inline-flex items-center gap-0.5 bg-rose-50 text-rose-700 text-[9px] font-bold px-1 rounded border border-rose-200" title="מועד ההרשמה עבר"><i class="fa-solid fa-clock"></i> עבר: ${formattedDl}</span>`;
+          } else {
+            badgesHtml += `<span class="inline-flex items-center gap-0.5 bg-amber-50 text-amber-700 text-[9px] font-bold px-1 rounded border border-amber-200" title="מועד אחרון להרשמה"><i class="fa-solid fa-clock"></i> עד: ${formattedDl}</span>`;
+          }
+        }
+        if (t.max_registrants) {
+          const cap = parseInt(t.max_registrants, 10);
+          if (subCount >= cap) {
+            badgesHtml += `<span class="inline-flex items-center gap-0.5 bg-rose-50 text-rose-700 text-[9px] font-bold px-1 rounded border border-rose-200" title="מכסת נרשמים מלאה"><i class="fa-solid fa-users"></i> מלא (${subCount}/${cap})</span>`;
+          } else {
+            badgesHtml += `<span class="inline-flex items-center gap-0.5 bg-slate-50 text-slate-600 text-[9px] font-bold px-1 rounded border border-slate-200" title="קיבולת נרשמים"><i class="fa-solid fa-users"></i> ${subCount}/${cap}</span>`;
+          }
+        }
+        
         html += `
           <div 
             onclick="setActiveTemplate('${t.id}')"
             class="p-2.5 px-3.5 transition cursor-pointer flex items-center justify-between gap-3 ${isSelected ? 'bg-brand-50 border-r-4 border-brand-600' : 'hover:bg-slate-50/50'}"
           >
-            <div class="flex items-center gap-1.5 min-w-0 overflow-hidden">
-              <h4 class="text-xs font-extrabold text-slate-900 group-hover:text-brand-600 leading-tight truncate flex items-center gap-1.5">
+            <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
+              <h4 class="text-xs font-extrabold text-slate-900 group-hover:text-brand-600 leading-tight truncate flex items-center gap-1.5 flex-wrap">
                 <span class="truncate">${t.activity_name}</span>
                 <span class="text-black font-normal shrink-0">(${subCount} חתימות)</span>
               </h4>
+              ${badgesHtml ? `<div class="flex items-center gap-1 flex-wrap mt-1">${badgesHtml}</div>` : ''}
             </div>
 
             <!-- Action buttons for administrators -->
@@ -3308,6 +3365,8 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       document.getElementById('modal-template-id').value = '';
       document.getElementById('modal-template-title').value = 'הצהרת בריאות ואישור הורים להשתתפות בפעילות';
       document.getElementById('modal-template-commitment').value = DEFAULT_COMMITMENT;
+      document.getElementById('modal-template-reg-deadline').value = '';
+      document.getElementById('modal-template-max-registrants').value = '';
       
       const gradeToggle = document.getElementById('modal-template-grade-toggle');
       if (gradeToggle) gradeToggle.checked = true;
@@ -3341,6 +3400,8 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       document.getElementById('modal-template-activity').value = t.activity_name;
       document.getElementById('modal-template-commitment').value = t.commitment_text;
       document.getElementById('modal-template-water-toggle').checked = t.show_water_clause;
+      document.getElementById('modal-template-reg-deadline').value = t.reg_deadline || '';
+      document.getElementById('modal-template-max-registrants').value = t.max_registrants || '';
 
       const gradeToggle = document.getElementById('modal-template-grade-toggle');
       if (gradeToggle) gradeToggle.checked = (t.include_grade_question !== false);
@@ -3392,6 +3453,8 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
       const activityVal = document.getElementById('modal-template-activity').value.trim();
       const waterVal = document.getElementById('modal-template-water-toggle').checked;
       const commitmentVal = document.getElementById('modal-template-commitment').value.trim();
+      const regDeadlineVal = document.getElementById('modal-template-reg-deadline').value || '';
+      const maxRegistrantsVal = document.getElementById('modal-template-max-registrants').value ? parseInt(document.getElementById('modal-template-max-registrants').value, 10) : '';
 
       const includeGradeVal = document.getElementById('modal-template-grade-toggle').checked;
       const selectedGrades = [];
@@ -3428,6 +3491,8 @@ ALTER TABLE public.parent_submissions ENABLE ROW LEVEL SECURITY;
         include_vegetarian_option: vegVal,
         payment_url: paymentUrlVal,
         payment_urls: payment_urls,
+        reg_deadline: regDeadlineVal,
+        max_registrants: maxRegistrantsVal,
         created_at: new Date().toISOString()
       };
 
